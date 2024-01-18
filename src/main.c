@@ -99,7 +99,26 @@ error_code execute(char *machine_file, char *input) { return ERROR; }
 // ༽つ۞﹏۞༼つ
 
 int main() {
-    // Vous pouvez ajouter des tests pour les fonctions ici
+    // ====================
+    // Testing ex-1
+    // ====================
+    printf("Ex-1\n");
+
+    char *str = "";
+    int len = strlen2(str);
+    printf("├ Test 1 passing? -> %s\n", len == 0 ? "true" : "false");
+
+    str = "\\0";
+    len = strlen2(str);
+    printf("├ Test 2 passing? -> %s\n", len == 2 ? "true" : "false");
+
+    str = "1";
+    len = strlen2(str);
+    printf("├ Test 3 passing? -> %s\n", len == 1 ? "true" : "false");
+
+    str = "Hello World!";
+    len = strlen2(str);
+    printf("└ Test 5 passing? -> %s\n", len == 12 ? "true" : "false");
 
     return 0;
 }
