@@ -143,12 +143,29 @@ int main() {
             continue;
         }
 
+        // Get the size of the file
+        fseek(fp, 0, SEEK_END);
+        long size = ftell(fp);
+
+        // Move the file pointer to a random position in the file
+        long random_pos = rand() % size;
+        fseek(fp, random_pos, SEEK_SET);
+
+        // Save the current position in the file
+        long initial_pos = ftell(fp);
+
         // Call the no_of_lines function and print the result
         error_code result = no_of_lines(fp);
         if (HAS_ERROR(result)) {
             printf("An error occurred with file %s\n", files[i]);
         } else {
             printf("The file %s has %d lines\n", files[i], result);
+        }
+
+        // Check that the position in the file is the same as before
+        long final_pos = ftell(fp);
+        if (initial_pos != final_pos) {
+            printf("Error: The position in the file %s changed after calling no_of_lines\n", files[i]);
         }
 
         // Close the file
