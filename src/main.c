@@ -1,3 +1,5 @@
+// Copyright 2024 Etienne Collin 20237904 & Justin Villeneuve 20132792
+
 #include "main.h"
 
 #include <stdio.h>
@@ -37,7 +39,22 @@ int strcmp(const char *p1, const char *p2) {
  * @return le nombre de caractères dans le code d'erreur, ou une erreur
  * si l'entrée est incorrecte
  */
-error_code strlen2(const char *s) { return ERROR; }
+error_code strlen2(const char *s) {
+    // Make sure the pointer is not null
+    if (s == NULL) return ERROR;
+
+    // Initialize the length to 0 and get the first character
+    int len = 0;
+    char current = (char) *s++;
+
+    // Loop through the string until the null character is reached
+    while (current != '\0') {
+        len++;
+        current = (char) *s++;
+    }
+
+    return len;
+}
 
 /**
  * Ex.2 :Retourne le nombre de lignes d'un fichier sans changer la position
@@ -87,7 +104,26 @@ error_code execute(char *machine_file, char *input) { return ERROR; }
 // ༽つ۞﹏۞༼つ
 
 int main() {
-    // Vous pouvez ajouter des tests pour les fonctions ici
+    // ====================
+    // Testing ex-1
+    // ====================
+    printf("Ex-1\n");
+
+    char *str = "";
+    int len = strlen2(str);
+    printf("├ Test 1 passing? -> %s\n", len == 0 ? "true" : "false");
+
+    str = "\\0";
+    len = strlen2(str);
+    printf("├ Test 2 passing? -> %s\n", len == 2 ? "true" : "false");
+
+    str = "1";
+    len = strlen2(str);
+    printf("├ Test 3 passing? -> %s\n", len == 1 ? "true" : "false");
+
+    str = "Hello World!";
+    len = strlen2(str);
+    printf("└ Test 5 passing? -> %s\n", len == 12 ? "true" : "false");
 
     return 0;
 }
