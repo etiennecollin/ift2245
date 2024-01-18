@@ -1,3 +1,5 @@
+// Copyright 2024 Etienne Collin 20237904 & Justin Villeneuve 20132792
+
 #include "main.h"
 
 #include <stdio.h>
@@ -37,7 +39,17 @@ int strcmp(const char *p1, const char *p2) {
  * @return le nombre de caractères dans le code d'erreur, ou une erreur
  * si l'entrée est incorrecte
  */
-error_code strlen2(const char *s) { return ERROR; }
+error_code strlen2(const char *s) {
+    int len = 0;
+    char current = (char) *s++;
+
+    while (current != '\0') {
+        len++;
+        current = (char) *s++;
+    }
+
+    return len;
+}
 
 /**
  * Ex.2 :Retourne le nombre de lignes d'un fichier sans changer la position
