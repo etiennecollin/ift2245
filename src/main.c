@@ -129,7 +129,7 @@ error_code execute(char *machine_file, char *input) { return ERROR; }
 int main() {
 
     // Create an array of the files to test
-    const char *files[] = {"../empty", "../four_lines", "../six_lines", "../seven_lines", "../eight_lines"};
+    const char *files[] = {"../empty", "../five_lines", "../six_lines", "../seven_lines", "../eight_lines"};
     int num_files = sizeof(files) / sizeof(files[0]);
 
     // Loop over each file
