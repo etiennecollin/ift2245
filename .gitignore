@@ -1,0 +1,5 @@
+cmake-build-*
+libelf
+tests_build
+.idea
+valgrind_output.txt
