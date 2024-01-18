@@ -127,8 +127,33 @@ error_code execute(char *machine_file, char *input) { return ERROR; }
 // ༽つ۞﹏۞༼つ
 
 int main() {
-    // Vous pouvez ajouter des tests pour les fonctions ici
 
+    // Create an array of the files to test
+    const char *files[] = {"../empty", "../four_lines", "../six_lines", "../seven_lines", "../eight_lines"};
+    int num_files = sizeof(files) / sizeof(files[0]);
+
+    // Loop over each file
+    for (int i = 0; i < num_files; i++) {
+        // Open the file
+        FILE *fp = fopen(files[i], "r");
+
+        // Check that the file was opened correctly
+        if (fp == NULL) {
+            printf("Failed to open file %s\n", files[i]);
+            continue;
+        }
+
+        // Call the no_of_lines function and print the result
+        error_code result = no_of_lines(fp);
+        if (HAS_ERROR(result)) {
+            printf("An error occurred with file %s\n", files[i]);
+        } else {
+            printf("The file %s has %d lines\n", files[i], result);
+        }
+
+        // Close the file
+        fclose(fp);
+    }
     return 0;
 }
 
