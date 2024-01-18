@@ -47,13 +47,13 @@ error_code strlen2(const char *s) { return ERROR; }
  */
 error_code no_of_lines(FILE *fp) {
     // Check that the file pointer is not NULL
-    if (fp == NULL) return ERROR;
+    if (fp == NULL) return -1;
 
     // Save the current position in the file
     long pos = ftell(fp);
 
     // Check that the current position is valid
-    if (pos == -1) return ERROR;
+    if (pos == -1) return -1;
 
     // Go to the beginning of the file
     rewind(fp);
@@ -82,7 +82,7 @@ error_code no_of_lines(FILE *fp) {
     }
 
     // Restore the position in the file
-    if (fseek(fp, pos, SEEK_SET) == -1) return ERROR;
+    if (fseek(fp, pos, SEEK_SET) == -1) return -1;
 
     return count;
 }
