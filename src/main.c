@@ -45,7 +45,47 @@ error_code strlen2(const char *s) { return ERROR; }
  * @param fp un pointeur vers le descripteur de fichier
  * @return le nombre de lignes, ou -1 si une erreur s'est produite
  */
-error_code no_of_lines(FILE *fp) { return ERROR; }
+error_code no_of_lines(FILE *fp) {
+    // Check that the file pointer is not NULL
+    if (fp == NULL) return ERROR;
+
+    // Save the current position in the file
+    long pos = ftell(fp);
+
+    // Check that the current position is valid
+    if (pos == -1) return ERROR;
+
+    // Go to the beginning of the file
+    rewind(fp);
+
+    // Count the number of lines in the file
+//    int count = 0;
+//    char current, previous = '\n';
+//    while ((current = getc(fp)) != EOF) {
+//        if (current == '\n') {
+//            count++;
+//        }
+//        previous = current;
+//    }
+//
+//    // If the last character is not a new line, add one to the count
+//    if (previous != '\n') {
+//        count++;
+//    }
+
+    int count = 0;
+    char current;
+    while ((current = getc(fp)) != EOF) {
+        if (current == '\n') {
+            count++;
+        }
+    }
+
+    // Restore the position in the file
+    if (fseek(fp, pos, SEEK_SET) == -1) return ERROR;
+
+    return count;
+}
 
 /**
  * Ex.3: Lit une ligne au complet d'un fichier
