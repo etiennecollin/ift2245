@@ -58,27 +58,20 @@ error_code no_of_lines(FILE *fp) {
     // Go to the beginning of the file
     rewind(fp);
 
-    // Count the number of lines in the file
-//    int count = 0;
-//    char current, previous = '\n';
-//    while ((current = getc(fp)) != EOF) {
-//        if (current == '\n') {
-//            count++;
-//        }
-//        previous = current;
-//    }
-//
-//    // If the last character is not a new line, add one to the count
-//    if (previous != '\n') {
-//        count++;
-//    }
-
+    // Count the number of lines in the file and keep track of the previous character
+    // This is done to check if the last line of the file is empty or not
     int count = 0;
-    char current;
+    char current, previous = '\n';
     while ((current = getc(fp)) != EOF) {
         if (current == '\n') {
             count++;
         }
+        previous = current;
+    }
+
+    // If the last character is not a new line, add one to the count
+    if (previous != '\n') {
+        count++;
     }
 
     // Restore the position in the file
