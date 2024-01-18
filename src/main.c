@@ -40,9 +40,14 @@ int strcmp(const char *p1, const char *p2) {
  * si l'entrée est incorrecte
  */
 error_code strlen2(const char *s) {
+    // Make sure the pointer is not null
+    if (s == NULL) return ERROR;
+
+    // Initialize the length to 0 and get the first character
     int len = 0;
     char current = (char) *s++;
 
+    // Loop through the string until the null character is reached
     while (current != '\0') {
         len++;
         current = (char) *s++;
