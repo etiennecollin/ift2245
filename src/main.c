@@ -235,6 +235,62 @@ int main() {
 
     printf("└ Done testing Ex-2\n");
 
+    // ====================
+    // Testing ex-3
+    // ====================
+    printf("Ex-3\n");
+
+    // Allocate memory for the string
+    char **read = malloc(sizeof(char *));
+
+    // Open the file
+    FILE *fp = fopen("../five_lines", "r");
+
+    // Check that the file was opened correctly
+    if (fp == NULL) {
+        printf("├ Failed to open file %s\n", "../five_lines");
+    }
+
+    // Read the first line of the file
+    len = readline(fp, read, 1024);
+
+    // Check that the line was read correctly
+    if (len == -1) { printf("├ An error occurred while reading line one in %s\n", "../five_lines"); }
+    char *line = *read;
+    printf("├ Test 1 passing? -> %s\n", len == 8 && strcmp(line, "line one") == 0 ? "true" : "false");
+
+    len = readline(fp, read, 1024);
+    if (len == -1) { printf("├ An error occurred while reading line two in %s\n", "../five_lines"); }
+    line = *read;
+    printf("├ Test 2 passing? -> %s\n", len == 8 && strcmp(line, "line two") == 0 ? "true" : "false");
+
+    len = readline(fp, read, 1024);
+    if (len == -1) { printf("├ An error occurred while reading line three in %s\n", "../five_lines"); }
+    line = *read;
+    printf("├ Test 3 passing? -> %s\n", len == 10 && strcmp(line, "line three") == 0 ? "true" : "false");
+
+    len = readline(fp, read, 1024);
+    if (len == -1) { printf("├ An error occurred while reading line four in %s\n", "../five_lines"); }
+    line = *read;
+    printf("├ Test 4 passing? -> %s\n", len == 9 && strcmp(line, "line four") == 0 ? "true" : "false");
+
+    len = readline(fp, read, 1024);
+    if (len == -1) { printf("├ An error occurred while reading line five in %s\n", "../five_lines"); }
+    line = *read;
+    printf("├ Test 5 passing? -> %s\n", len == 9 && strcmp(line, "line five") == 0 ? "true" : "false");
+
+    len = readline(fp, read, 1024);
+    if (len == -1) { printf("├ An error occurred while reading line six in %s\n", "../five_lines"); }
+    line = *read;
+    // Print line and len
+    printf("├ Test 6 passing? -> %s\n", len == 0 && strcmp(line, "") == 0 ? "true" : "false");
+
+    free(*read);
+    free(read);
+    fclose(fp);
+
+    printf("└ Done testing Ex-3\n");
+
     return 0;
 }
 
