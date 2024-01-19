@@ -41,11 +41,11 @@ int strcmp(const char *p1, const char *p2) {
  */
 error_code strlen2(const char *s) {
     // Make sure the pointer is not null
-    if (s == NULL) return ERROR;
+    if (s == NULL) return -1;
 
     // Initialize the length to 0 and get the first character
     int len = 0;
-    char current = (char) *s++;
+    int current = *s++;
 
     // Loop through the string until the null character is reached
     while (current != '\0') {
@@ -78,7 +78,7 @@ error_code no_of_lines(FILE *fp) {
     // Count the number of lines in the file and keep track of the previous character
     // This is done to check if the last line of the file is empty or not
     int count = 0;
-    char current, previous = '\n';
+    int current, previous = '\n';
     while ((current = getc(fp)) != EOF) {
         if (current == '\n') {
             count++;
@@ -115,7 +115,7 @@ error_code readline(FILE *fp, char **out, size_t max_len) {
     if (addr == NULL) return -1;
 
     // Read the line from the file and save it to memory
-    char current;
+    int current;
     size_t i = 0;
     while ((current = getc(fp)) != '\n' && current != EOF && i <= max_len) {
         addr[i++] = current;
@@ -124,9 +124,8 @@ error_code readline(FILE *fp, char **out, size_t max_len) {
     // Add the null character to the end of the string
     addr[i] = '\0';
 
-    // Output the address of the string
+    // Output the address of the string and return the number of characters read
     *out = addr;
-
     return i;
 }
 
@@ -240,7 +239,7 @@ int main() {
     // ====================
     printf("Ex-3\n");
 
-    // Allocate memory for the string
+    // Allocate memory for the string and initialize the memory to zeros
     char **read = malloc(sizeof(char *));
 
     // Open the file
@@ -258,34 +257,38 @@ int main() {
     if (len == -1) { printf("├ An error occurred while reading line one in %s\n", "../five_lines"); }
     char *line = *read;
     printf("├ Test 1 passing? -> %s\n", len == 8 && strcmp(line, "line one") == 0 ? "true" : "false");
+    free(line);
 
     len = readline(fp, read, 1024);
     if (len == -1) { printf("├ An error occurred while reading line two in %s\n", "../five_lines"); }
     line = *read;
     printf("├ Test 2 passing? -> %s\n", len == 8 && strcmp(line, "line two") == 0 ? "true" : "false");
+    free(line);
 
     len = readline(fp, read, 1024);
     if (len == -1) { printf("├ An error occurred while reading line three in %s\n", "../five_lines"); }
     line = *read;
     printf("├ Test 3 passing? -> %s\n", len == 10 && strcmp(line, "line three") == 0 ? "true" : "false");
+    free(line);
 
     len = readline(fp, read, 1024);
     if (len == -1) { printf("├ An error occurred while reading line four in %s\n", "../five_lines"); }
     line = *read;
     printf("├ Test 4 passing? -> %s\n", len == 9 && strcmp(line, "line four") == 0 ? "true" : "false");
+    free(line);
 
     len = readline(fp, read, 1024);
     if (len == -1) { printf("├ An error occurred while reading line five in %s\n", "../five_lines"); }
     line = *read;
     printf("├ Test 5 passing? -> %s\n", len == 9 && strcmp(line, "line five") == 0 ? "true" : "false");
+    free(line);
 
     len = readline(fp, read, 1024);
     if (len == -1) { printf("├ An error occurred while reading line six in %s\n", "../five_lines"); }
     line = *read;
-    // Print line and len
     printf("├ Test 6 passing? -> %s\n", len == 0 && strcmp(line, "") == 0 ? "true" : "false");
+    free(line);
 
-    free(*read);
     free(read);
     fclose(fp);
 
