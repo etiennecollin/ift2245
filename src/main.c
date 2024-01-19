@@ -62,7 +62,40 @@ error_code strlen2(const char *s) {
  * @param fp un pointeur vers le descripteur de fichier
  * @return le nombre de lignes, ou -1 si une erreur s'est produite
  */
-error_code no_of_lines(FILE *fp) { return ERROR; }
+error_code no_of_lines(FILE *fp) {
+    // Check that the file pointer is not NULL
+    if (fp == NULL) return -1;
+
+    // Save the current position in the file
+    long pos = ftell(fp);
+
+    // Check that the current position is valid
+    if (pos == -1) return -1;
+
+    // Go to the beginning of the file
+    rewind(fp);
+
+    // Count the number of lines in the file and keep track of the previous character
+    // This is done to check if the last line of the file is empty or not
+    int count = 0;
+    char current, previous = '\n';
+    while ((current = getc(fp)) != EOF) {
+        if (current == '\n') {
+            count++;
+        }
+        previous = current;
+    }
+
+    // If the last character is not a new line, add one to the count
+    if (previous != '\n') {
+        count++;
+    }
+
+    // Restore the position in the file
+    if (fseek(fp, pos, SEEK_SET) == -1) return -1;
+
+    return count;
+}
 
 /**
  * Ex.3: Lit une ligne au complet d'un fichier
@@ -123,7 +156,60 @@ int main() {
 
     str = "Hello World!";
     len = strlen2(str);
-    printf("└ Test 5 passing? -> %s\n", len == 12 ? "true" : "false");
+    printf("├ Test 5 passing? -> %s\n", len == 12 ? "true" : "false");
+
+    printf("└ Done testing Ex-1\n");
+
+    // ====================
+    // Testing ex-2
+    // ====================
+    printf("Ex-2\n");
+
+    // Create an array of the files to test
+    const char *files[] = {"../empty", "../five_lines", "../six_lines", "../seven_lines", "../eight_lines"};
+    int num_files = sizeof(files) / sizeof(files[0]);
+
+    // Loop over each file
+    for (int i = 0; i < num_files; i++) {
+        // Open the file
+        FILE *fp = fopen(files[i], "r");
+
+        // Check that the file was opened correctly
+        if (fp == NULL) {
+            printf("├ Failed to open file %s\n", files[i]);
+            continue;
+        }
+
+        // Get the size of the file
+        fseek(fp, 0, SEEK_END);
+        long size = ftell(fp);
+
+        // Move the file pointer to a random position in the file
+        long random_pos = rand() % size;
+        fseek(fp, random_pos, SEEK_SET);
+
+        // Save the current position in the file
+        long initial_pos = ftell(fp);
+
+        // Call the no_of_lines function and print the result
+        error_code result = no_of_lines(fp);
+        if (HAS_ERROR(result)) {
+            printf("├ An error occurred with file %s\n", files[i]);
+        } else {
+            printf("├ The file %s has %d lines\n", files[i], result);
+        }
+
+        // Check that the position in the file is the same as before
+        long final_pos = ftell(fp);
+        if (initial_pos != final_pos) {
+            printf("├ Error: The position in the file %s changed after calling no_of_lines\n", files[i]);
+        }
+
+        // Close the file
+        fclose(fp);
+    }
+
+    printf("└ Done testing Ex-2\n");
 
     return 0;
 }
