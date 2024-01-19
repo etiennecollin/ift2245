@@ -104,7 +104,31 @@ error_code no_of_lines(FILE *fp) {
  * @param max_len la longueur maximale de la ligne à lire
  * @return le nombre de caractère ou ERROR si une erreur est survenue
  */
-error_code readline(FILE *fp, char **out, size_t max_len) { return ERROR; }
+error_code readline(FILE *fp, char **out, size_t max_len) {
+    // Check that the file pointer is not NULL
+    if (fp == NULL) return -1;
+
+    // Allocate memory for the string
+    char *addr = malloc(max_len + 1);
+
+    // Check that the malloc was successful
+    if (addr == NULL) return -1;
+
+    // Read the line from the file and save it to memory
+    char current;
+    size_t i = 0;
+    while ((current = getc(fp)) != '\n' && current != EOF && i <= max_len) {
+        addr[i++] = current;
+    }
+
+    // Add the null character to the end of the string
+    addr[i] = '\0';
+
+    // Output the address of the string
+    *out = addr;
+
+    return i;
+}
 
 /**
  * Ex.4: Copie un bloc mémoire vers un autre
