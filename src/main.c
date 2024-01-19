@@ -136,7 +136,21 @@ error_code readline(FILE *fp, char **out, size_t max_len) {
  * @param len la longueur (en byte) de la source
  * @return nombre de bytes copiés ou une erreur s'il y a lieu
  */
-error_code memcpy2(void *dest, const void *src, size_t len) { return ERROR; }
+error_code memcpy2(void *dest, const void *src, size_t len) {
+    // Check that the pointers are not NULL
+    if (dest == NULL || src == NULL) return -1;
+
+    // Cast the pointers to byte pointers
+    byte *dest_addr = (byte *) dest;
+    byte *src_addr = (byte *) src;
+
+    // Copy the source to the destination
+    for (size_t i = 0; i < len; i++) {
+        dest_addr[i] = src_addr[i];
+    }
+
+    return len;
+}
 
 /**
  * Ex.5: Analyse une ligne de transition
@@ -293,6 +307,53 @@ int main() {
     fclose(fp);
 
     printf("└ Done testing Ex-3\n");
+
+    // ====================
+    // Testing ex-4
+    // ====================
+    printf("Ex-4\n");
+
+    byte *a = calloc(100, sizeof(byte));
+    byte *b = calloc(100, sizeof(byte));
+    for (int i = 0; i < 10; i++) b[i] = i + 1;
+
+    int nb_bytes = memcpy2(a, b, 10);
+    printf("├ Test 0 passing? -> %s\n", nb_bytes == 10 ? "true" : "false");
+
+    int passing = 1;
+    for (int i = 0; i < 10; i++) {
+        passing = a[i] == b[i] && passing;
+    }
+    printf("├ Test 1 passing? -> %s\n", passing == 1 ? "true" : "false");
+
+    for (int i = 0; i < 100; ++i) {
+        b[i] = 0;
+        a[i] = 0;
+    }
+    for (int i = 0; i < 100; i++) b[i] = i + 1;
+
+    nb_bytes = memcpy2(a, b, 100);
+    printf("├ Test 2 passing? -> %s\n", nb_bytes == 100 ? "true" : "false");
+
+    passing = 1;
+    for (int i = 0; i < 100; i++) {
+        passing = a[i] == b[i] && passing;
+    }
+    printf("├ Test 3 passing? -> %s\n",passing == 1 ? "true" : "false");
+
+    free(a);
+    free(b);
+
+    a = malloc(sizeof(byte) * 0);
+    b = malloc(sizeof(byte) * 0);
+
+    nb_bytes = memcpy2(a, b, 0);
+    printf("├ Test 4 passing? -> %s\n", nb_bytes == 0 ? "true" : "false");
+
+    free(a);
+    free(b);
+
+    printf("└ Done testing Ex-4\n");
 
     return 0;
 }
