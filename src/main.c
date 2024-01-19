@@ -136,7 +136,21 @@ error_code readline(FILE *fp, char **out, size_t max_len) {
  * @param len la longueur (en byte) de la source
  * @return nombre de bytes copiés ou une erreur s'il y a lieu
  */
-error_code memcpy2(void *dest, const void *src, size_t len) { return ERROR; }
+error_code memcpy2(void *dest, const void *src, size_t len) {
+    // Check that the pointers are not NULL
+    if (dest == NULL || src == NULL) return -1;
+
+    // Cast the pointers to byte pointers
+    byte *dest_addr = (byte *) dest;
+    byte *src_addr = (byte *) src;
+
+    // Copy the source to the destination
+    for (size_t i = 0; i < len; i++) {
+        dest_addr[i] = src_addr[i];
+    }
+
+    return len;
+}
 
 /**
  * Ex.5: Analyse une ligne de transition
