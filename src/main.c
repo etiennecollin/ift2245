@@ -1,3 +1,5 @@
+// Copyright 2024 Etienne Collin 20237904 & Justin Villeneuve 20132792
+
 #include "main.h"
 
 #include <stdio.h>
@@ -37,7 +39,22 @@ int strcmp(const char *p1, const char *p2) {
  * @return le nombre de caractères dans le code d'erreur, ou une erreur
  * si l'entrée est incorrecte
  */
-error_code strlen2(const char *s) { return ERROR; }
+error_code strlen2(const char *s) {
+    // Make sure the pointer is not null
+    if (s == NULL) return ERROR;
+
+    // Initialize the length to 0 and get the first character
+    int len = 0;
+    char current = (char) *s++;
+
+    // Loop through the string until the null character is reached
+    while (current != '\0') {
+        len++;
+        current = (char) *s++;
+    }
+
+    return len;
+}
 
 /**
  * Ex.2 :Retourne le nombre de lignes d'un fichier sans changer la position
@@ -120,6 +137,33 @@ error_code execute(char *machine_file, char *input) { return ERROR; }
 // ༽つ۞﹏۞༼つ
 
 int main() {
+    // ====================
+    // Testing ex-1
+    // ====================
+    printf("Ex-1\n");
+
+    char *str = "";
+    int len = strlen2(str);
+    printf("├ Test 1 passing? -> %s\n", len == 0 ? "true" : "false");
+
+    str = "\\0";
+    len = strlen2(str);
+    printf("├ Test 2 passing? -> %s\n", len == 2 ? "true" : "false");
+
+    str = "1";
+    len = strlen2(str);
+    printf("├ Test 3 passing? -> %s\n", len == 1 ? "true" : "false");
+
+    str = "Hello World!";
+    len = strlen2(str);
+    printf("├ Test 5 passing? -> %s\n", len == 12 ? "true" : "false");
+
+    printf("└ Done testing Ex-1\n");
+
+    // ====================
+    // Testing ex-2
+    // ====================
+    printf("Ex-2\n");
 
     // Create an array of the files to test
     const char *files[] = {"../empty", "../five_lines", "../six_lines", "../seven_lines", "../eight_lines"};
@@ -132,7 +176,7 @@ int main() {
 
         // Check that the file was opened correctly
         if (fp == NULL) {
-            printf("Failed to open file %s\n", files[i]);
+            printf("├ Failed to open file %s\n", files[i]);
             continue;
         }
 
@@ -150,20 +194,23 @@ int main() {
         // Call the no_of_lines function and print the result
         error_code result = no_of_lines(fp);
         if (HAS_ERROR(result)) {
-            printf("An error occurred with file %s\n", files[i]);
+            printf("├ An error occurred with file %s\n", files[i]);
         } else {
-            printf("The file %s has %d lines\n", files[i], result);
+            printf("├ The file %s has %d lines\n", files[i], result);
         }
 
         // Check that the position in the file is the same as before
         long final_pos = ftell(fp);
         if (initial_pos != final_pos) {
-            printf("Error: The position in the file %s changed after calling no_of_lines\n", files[i]);
+            printf("├ Error: The position in the file %s changed after calling no_of_lines\n", files[i]);
         }
 
         // Close the file
         fclose(fp);
     }
+
+    printf("└ Done testing Ex-2\n");
+
     return 0;
 }
 
