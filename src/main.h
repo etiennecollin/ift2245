@@ -22,6 +22,11 @@ typedef struct {
     char write;
 } transition;
 
+transition **get_transitions(FILE *fp, int num_transitions);
+
+error_code step(char *tape, size_t position, transition **transitions, int num_transitions, char *initial_state, char *accept_state,
+          char *reject_state);
+
 error_code strlen2(const char *s);
 
 error_code no_of_lines(FILE *fp);
