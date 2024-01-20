@@ -185,7 +185,7 @@ char *read_state(const char *line, size_t *p) {
  * Reads a char from a line
  * @param line the line to read from
  * @param p the position in the line at which the char starts
- * @return the char or '\0' if an error occurred
+ * @return the char or 2 if an error occurred
  */
 char parse_movement(const char *line, size_t *p) {
     // Read the symbol to read
@@ -199,7 +199,7 @@ char parse_movement(const char *line, size_t *p) {
         case 'D':
             return 1;
         default:
-            return '\0';
+            return 2;
     }
 }
 
@@ -250,9 +250,9 @@ transition *parse_line(char *line, size_t len) {
     // ====================
     // Read the movement
     char movement = parse_movement(line, &p);
-   
+
     // Check that the movement is valid
-    if (movement == '\0') {
+    if (movement == 2) {
         free(current_state);
         free(next_state);
         return NULL;
@@ -523,6 +523,13 @@ int main() {
     result &= t->write == '1';
     result &= t->movement == (char) -1;
     printf("├ Test 4 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    line = "(q0,1)->(qA,1,R)";
+    t = parse_line(line, strlen2(line));
+    printf("├ Test 5 passing? -> %s\n", t != NULL ? "true" : "false");
     free(t->next_state);
     free(t->current_state);
     free(t);
