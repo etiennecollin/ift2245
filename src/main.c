@@ -321,21 +321,28 @@ error_code execute(char *machine_file, char *input) {
     if (input_length == ERROR) return ERROR;
 
     // Create the "tape" and set the length to min(10000, 5 * input_length)
-    int tape_length = input_length;
-    if (tape_length < 1000) { tape_length = 10000; } else { tape_length *= 5; }
+    int tape_length = input_length * 2;
+    if (tape_length < 256) tape_length = 256;
+
+    // Allocate the pointer to the tape
+    char **tape = malloc(sizeof(char *));
+    if (tape == NULL) return ERROR;
 
     // Allocate the tape
-    char *tape = malloc(sizeof(char) * tape_length);
-    if (tape == NULL) return ERROR;
+    *tape = malloc(sizeof(char) * tape_length);
+    if (*tape == NULL) {
+        free(tape);
+        return ERROR;
+    }
 
     // Initialize the tape with spaces
     for (int i = 0; i < tape_length; i++) {
-        tape[i] = ' ';
+        (*tape)[i] = ' ';
     }
 
     // Copy the input to the middle of the tape
-    size_t position = tape_length / 2 - input_length / 2;
-    memcpy2(&tape[position], input, input_length);
+    int position = tape_length / 2 - input_length / 2;
+    memcpy2(&(*tape)[position], input, input_length);
 
     // Create a transition array
     int num_transitions = num_lines - 3;
@@ -347,11 +354,13 @@ error_code execute(char *machine_file, char *input) {
         free(initial_state);
         free(accept_state);
         free(reject_state);
+        free(*tape);
         free(tape);
         return ERROR;
     }
 
-    int result = step(tape, position, transitions, num_transitions, *initial_state, *accept_state, *reject_state);
+    int result = step(tape, tape_length, position, transitions, num_transitions, *initial_state, *accept_state,
+                      *reject_state);
 
     // Close the file
     fclose(fp);
@@ -361,6 +370,7 @@ error_code execute(char *machine_file, char *input) {
     free(initial_state);
     free(accept_state);
     free(reject_state);
+    free(*tape);
     free(tape);
     for (int i = 0; i < num_transitions; i++) {
         free(transitions[i]->current_state);
@@ -429,16 +439,16 @@ transition **get_transitions(FILE *fp, int num_transitions) {
  * @param reject_state the reject state of the turing machine
  * @return -1 if an error occurred, 0 if the machine rejected the input, 1 if the machine accepted the input
  */
-error_code step(char *tape, size_t position, transition **transitions, int num_transitions, char *initial_state,
-                char *accept_state,
-                char *reject_state) {
+error_code
+step(char **tape, int tape_length, int position, transition **transitions, int num_transitions, char *initial_state,
+     char *accept_state, char *reject_state) {
     // Get the current state
     char *current_state = initial_state;
 
 
     while (strcmp(current_state, accept_state) != 0 && strcmp(current_state, reject_state) != 0) {
         // Get the current symbol
-        char current_symbol = tape[position];
+        char current_symbol = (*tape)[position];
 
         // Find matching transition
         transition *current_transition = NULL;
@@ -460,8 +470,16 @@ error_code step(char *tape, size_t position, transition **transitions, int num_t
 
         // Update the tape
         current_state = current_transition->next_state;
-        tape[position] = current_transition->write;
+        (*tape)[position] = current_transition->write;
         position += current_transition->movement;
+
+        // Check if the position is valid
+        if (position <= 0 || position >= tape_length) {
+            if (resize_tape(tape, &tape_length, &position) == ERROR) {
+                return ERROR;
+            }
+
+        }
     }
 
     if (strcmp(current_state, accept_state) == 0) {
@@ -469,6 +487,39 @@ error_code step(char *tape, size_t position, transition **transitions, int num_t
     } else {
         return 0;
     }
+}
+
+error_code resize_tape(char **tape, int *tape_length, int *position) {
+    int current_position = *position;
+    int current_length = *tape_length;
+
+    // Calculate the new length and allocate memory for the new tape
+    int new_length = current_length * 2;
+    char *new_tape = malloc(sizeof(char) * new_length);
+
+    // Check that the malloc was successful
+    if (new_tape == NULL) {
+        return ERROR;
+    }
+
+    // Initialize the new tape with spaces
+    for (int i = 0; i < new_length; i++) {
+        new_tape[i] = ' ';
+    }
+
+    // Calculate new position
+    int tape_offset = new_length / 2 - current_length / 2;
+
+    // Copy the old tape to the new tape
+    if (memcpy2(&new_tape[tape_offset], *tape, current_length) == ERROR) return ERROR;
+
+    // Update the tape and the length
+    free(*tape);
+    *tape = new_tape;
+    *tape_length = new_length;
+    *position = tape_offset + current_position;
+
+    return 0;
 }
 
 // ATTENTION! TOUT CE QUI EST ENTRE LES BALISES ༽つ۞﹏۞༼つ SERA ENLEVÉ!
