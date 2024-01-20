@@ -713,11 +713,27 @@ int main() {
     line = "(q0,1)->(qA,1,R)";
     t = parse_line(line, strlen2(line));
     printf("├ Test 5 passing? -> %s\n", t != NULL ? "true" : "false");
-    free(t->next_state);
-    free(t->current_state);
+    if (t != NULL) {
+        free(t->next_state);
+        free(t->current_state);
+    }
     free(t);
 
     printf("└ Done testing Ex-5\n");
+
+    // ====================
+    // Testing ex-6
+    // ====================
+    printf("Ex-6\n");
+
+    printf("├ Test 1 passing? -> %s\n", execute("../this_file_dne", "101010") == -1 ? "true" : "false");
+    printf("├ Test 2 passing? -> %s\n", execute("../youre_gonna_go_far_kid", "") == 1 ? "true" : "false");
+    printf("├ Test 3 passing? -> %s\n", execute("../has_five_ones", "0000") == 0 ? "true" : "false");
+    printf("├ Test 4 passing? -> %s\n", execute("../has_five_ones", "101010101") == 1 ? "true" : "false");
+    printf("├ Test 5 passing? -> %s\n", execute("../has_five_ones", "111111111") == 1 ? "true" : "false");
+    printf("├ Test 6 passing? -> %s\n",
+           execute("../youre_gonna_go_far_kid", "STARING AT THE SUN") == -1 ? "true" : "false");
+    printf("└ Done testing Ex-6\n");
 
     return 0;
 }
