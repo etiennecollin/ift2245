@@ -105,8 +105,8 @@ error_code no_of_lines(FILE *fp) {
  * @return le nombre de caractère ou ERROR si une erreur est survenue
  */
 error_code readline(FILE *fp, char **out, size_t max_len) {
-    // Check that the file pointer is not NULL
-    if (fp == NULL) return -1;
+    // Check that the file pointer and out pointer is not NULL
+    if (fp == NULL || out == NULL) return -1;
 
     // Allocate memory for the string
     char *addr = malloc(max_len + 1);
@@ -116,7 +116,7 @@ error_code readline(FILE *fp, char **out, size_t max_len) {
 
     // Read the line from the file and save it to memory
     int current;
-    size_t i = 0;
+    int i = 0;
     while ((current = getc(fp)) != '\n' && current != EOF && i <= max_len) {
         addr[i++] = current;
     }
@@ -149,7 +149,7 @@ error_code memcpy2(void *dest, const void *src, size_t len) {
         dest_addr[i] = src_addr[i];
     }
 
-    return len;
+    return (int) len;
 }
 
 /**
@@ -251,8 +251,8 @@ transition *parse_line(char *line, size_t len) {
     // Read the movement
     char movement = parse_movement(line, &p);
 
-    // Check that the movement is valid
-    if (movement == 2) {
+    // Check that the movement is valid and that we did not reach the end of the line
+    if (movement == 2 || p > len) {
         free(current_state);
         free(next_state);
         return NULL;
@@ -262,22 +262,22 @@ transition *parse_line(char *line, size_t len) {
     // Initialize the transition
     // ====================
     // Allocate memory for a transition
-    transition *transition = malloc(sizeof(transition));
+    transition *t = malloc(sizeof(transition));
 
     // Check that the malloc was successful
-    if (transition == NULL) {
+    if (t == NULL) {
         free(current_state);
         free(next_state);
         return NULL;
     }
 
-    transition->current_state = current_state;
-    transition->next_state = next_state;
-    transition->read = read;
-    transition->write = write;
-    transition->movement = movement;
+    t->current_state = current_state;
+    t->next_state = next_state;
+    t->read = read;
+    t->write = write;
+    t->movement = movement;
 
-    return transition;
+    return t;
 }
 
 /**
@@ -286,7 +286,190 @@ transition *parse_line(char *line, size_t len) {
  * @param input la chaîne d'entrée de la machine de turing
  * @return le code d'erreur
  */
-error_code execute(char *machine_file, char *input) { return ERROR; }
+error_code execute(char *machine_file, char *input) {
+    // Check that the pointers are not NULL
+    if (machine_file == NULL || input == NULL) return ERROR;
+
+    // Open the machine file
+    FILE *fp = fopen(machine_file, "r");
+    if (fp == NULL) return ERROR;
+
+    // Get the number of lines in the machine file
+    int num_lines = no_of_lines(fp);
+    if (num_lines == ERROR) return ERROR;
+
+    // Read the initial, accept and reject states
+    char **initial_state = malloc(sizeof(char *));
+    char **accept_state = malloc(sizeof(char *));
+    char **reject_state = malloc(sizeof(char *));
+
+    // Check that the mallocs were successful
+    if (readline(fp, initial_state, 5) == ERROR
+        || readline(fp, accept_state, 5) == ERROR
+        || readline(fp, reject_state, 5) == ERROR) {
+        free(*initial_state);
+        free(*accept_state);
+        free(*reject_state);
+        free(initial_state);
+        free(accept_state);
+        free(reject_state);
+        return ERROR;
+    }
+
+    // Get the length of the input
+    int input_length = strlen2(input);
+    if (input_length == ERROR) return ERROR;
+
+    // Create the "tape" and set the length to min(10000, 5 * input_length)
+    int tape_length = input_length;
+    if (tape_length < 1000) { tape_length = 10000; } else { tape_length *= 5; }
+
+    // Allocate the tape
+    char *tape = malloc(sizeof(char) * tape_length);
+    if (tape == NULL) return ERROR;
+
+    // Initialize the tape with spaces
+    for (int i = 0; i < tape_length; i++) {
+        tape[i] = ' ';
+    }
+
+    // Copy the input to the middle of the tape
+    size_t position = tape_length / 2 - input_length / 2;
+    memcpy2(&tape[position], input, input_length);
+
+    // Create a transition array
+    int num_transitions = num_lines - 3;
+    transition **transitions = get_transitions(fp, num_transitions);
+    if (transitions == NULL) {
+        free(*initial_state);
+        free(*accept_state);
+        free(*reject_state);
+        free(initial_state);
+        free(accept_state);
+        free(reject_state);
+        free(tape);
+        return ERROR;
+    }
+
+    int result = step(tape, position, transitions, num_transitions, *initial_state, *accept_state, *reject_state);
+
+    // Close the file
+    fclose(fp);
+    free(*initial_state);
+    free(*accept_state);
+    free(*reject_state);
+    free(initial_state);
+    free(accept_state);
+    free(reject_state);
+    free(tape);
+    for (int i = 0; i < num_transitions; i++) {
+        free(transitions[i]->current_state);
+        free(transitions[i]->next_state);
+        free(transitions[i]);
+    }
+    free(transitions);
+
+    return result;
+
+}
+
+/**
+ * Reads the transitions from a file
+ * @param fp the file pointer
+ * @param num_transitions the number of transitions to read
+ * @return the transitions or NULL if an error occurred
+ */
+transition **get_transitions(FILE *fp, int num_transitions) {
+    transition **transitions = malloc(sizeof(transition *) * num_transitions);
+    char **current_line = malloc(sizeof(char *));
+
+    // Check that the malloc was successful
+    if (transitions == NULL || current_line == NULL) {
+        free(transitions);
+        free(current_line);
+        return NULL;
+    }
+
+    // Read the transitions
+    for (int i = 0; i < num_transitions; i++) {
+        int res = readline(fp, current_line, 1024);
+        int len = strlen2(*current_line);
+
+        if (res == ERROR || len == ERROR) {
+            free(transitions);
+            free(*current_line);
+            free(current_line);
+            return NULL;
+        }
+
+        transition *transition = parse_line(*current_line, len);
+        if (transition == NULL) {
+            free(transitions);
+            free(*current_line);
+            free(current_line);
+            return NULL;
+        }
+
+        transitions[i] = transition;
+        free(*current_line);
+    }
+
+    free(current_line);
+    return transitions;
+}
+
+/**
+ * Runs the turing machine until it reaches an accept or reject state
+ * @param tape the tape of the turing machine
+ * @param position the position of the head on the tape
+ * @param transitions the list of available transitions
+ * @param num_transitions the number of transitions available
+ * @param initial_state the initial state of the turing machine
+ * @param accept_state the accept state of the turing machine
+ * @param reject_state the reject state of the turing machine
+ * @return -1 if an error occurred, 0 if the machine rejected the input, 1 if the machine accepted the input
+ */
+error_code step(char *tape, size_t position, transition **transitions, int num_transitions, char *initial_state,
+                char *accept_state,
+                char *reject_state) {
+    // Get the current state
+    char *current_state = initial_state;
+
+
+    while (strcmp(current_state, accept_state) != 0 && strcmp(current_state, reject_state) != 0) {
+        // Get the current symbol
+        char current_symbol = tape[position];
+
+        // Find matching transition
+        transition *current_transition = NULL;
+        for (int i = 0; i < num_transitions; i++) {
+            // Get the transition
+            transition *transition = transitions[i];
+
+            // Check if the transition is the correct one
+            if (strcmp(transition->current_state, current_state) == 0 && transition->read == current_symbol) {
+                current_transition = transition;
+                break;
+            }
+        }
+
+        // No transition found
+        if (current_transition == NULL) {
+            return ERROR;
+        }
+
+        // Update the tape
+        current_state = current_transition->next_state;
+        tape[position] = current_transition->write;
+        position += current_transition->movement;
+    }
+
+    if (strcmp(current_state, accept_state) == 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
 // ATTENTION! TOUT CE QUI EST ENTRE LES BALISES ༽つ۞﹏۞༼つ SERA ENLEVÉ!
 // N'AJOUTEZ PAS D'AUTRES ༽つ۞﹏۞༼つ
@@ -373,7 +556,7 @@ int main() {
     // ====================
     printf("Ex-3\n");
 
-    // Allocate memory for the string and initialize the memory to zeros
+    // Allocate memory for the string
     char **read = malloc(sizeof(char *));
 
     // Open the file
@@ -530,11 +713,27 @@ int main() {
     line = "(q0,1)->(qA,1,R)";
     t = parse_line(line, strlen2(line));
     printf("├ Test 5 passing? -> %s\n", t != NULL ? "true" : "false");
-    free(t->next_state);
-    free(t->current_state);
+    if (t != NULL) {
+        free(t->next_state);
+        free(t->current_state);
+    }
     free(t);
 
     printf("└ Done testing Ex-5\n");
+
+    // ====================
+    // Testing ex-6
+    // ====================
+    printf("Ex-6\n");
+
+    printf("├ Test 1 passing? -> %s\n", execute("../this_file_dne", "101010") == -1 ? "true" : "false");
+    printf("├ Test 2 passing? -> %s\n", execute("../youre_gonna_go_far_kid", "") == 1 ? "true" : "false");
+    printf("├ Test 3 passing? -> %s\n", execute("../has_five_ones", "0000") == 0 ? "true" : "false");
+    printf("├ Test 4 passing? -> %s\n", execute("../has_five_ones", "101010101") == 1 ? "true" : "false");
+    printf("├ Test 5 passing? -> %s\n", execute("../has_five_ones", "111111111") == 1 ? "true" : "false");
+    printf("├ Test 6 passing? -> %s\n",
+           execute("../youre_gonna_go_far_kid", "STARING AT THE SUN") == -1 ? "true" : "false");
+    printf("└ Done testing Ex-6\n");
 
     return 0;
 }
