@@ -507,13 +507,13 @@ error_code resize_tape(char **tape, int *tape_length, int *position) {
         new_tape[i] = ' ';
     }
 
-    // Calculate new position
-    int tape_offset = new_length / 2 - current_length / 2;
+    // Calculate new position to center the old tape on the new tape
+    int tape_offset = current_length / 2;
 
     // Copy the old tape to the new tape
     if (memcpy2(&new_tape[tape_offset], *tape, current_length) == ERROR) return ERROR;
 
-    // Update the tape and the length
+    // Update the tape, the length and the position
     free(*tape);
     *tape = new_tape;
     *tape_length = new_length;
