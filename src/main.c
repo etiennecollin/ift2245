@@ -170,9 +170,8 @@ char *read_state(const char *line, size_t *p) {
     // Read the current state
     size_t i = 0;
     while (line[*p] != ',' && i < 5) {
-        current_state[i] = line[*p];
+        current_state[i] = line[(*p)++];
         i++;
-        (*p)++;
     }
     current_state[i] = '\0';
 
@@ -180,6 +179,28 @@ char *read_state(const char *line, size_t *p) {
     (*p)++;
 
     return current_state;
+}
+
+/**
+ * Reads a char from a line
+ * @param line the line to read from
+ * @param p the position in the line at which the char starts
+ * @return the char or '\0' if an error occurred
+ */
+char parse_movement(const char *line, size_t *p) {
+    // Read the symbol to read
+    char read = line[(*p)++];
+
+    switch (read) {
+        case 'G':
+            return -1;
+        case 'R':
+            return 0;
+        case 'D':
+            return 1;
+        default:
+            return '\0';
+    }
 }
 
 /**
@@ -228,7 +249,14 @@ transition *parse_line(char *line, size_t len) {
     // Movement
     // ====================
     // Read the movement
-    char movement = line[p++];
+    char movement = parse_movement(line, &p);
+   
+    // Check that the movement is valid
+    if (movement == '\0') {
+        free(current_state);
+        free(next_state);
+        return NULL;
+    }
 
     // ====================
     // Initialize the transition
@@ -457,7 +485,7 @@ int main() {
     result &= strcmp(t->next_state, "qR") == 0;
     result &= t->read == '0';
     result &= t->write == '0';
-    result &= t->movement == 'D';
+    result &= t->movement == 1;
     printf("├ Test 1 passing? -> %s\n", result == 1 ? "true" : "false");
     free(t->next_state);
     free(t->current_state);
@@ -469,7 +497,7 @@ int main() {
     result &= strcmp(t->next_state, "qA") == 0;
     result &= t->read == '1';
     result &= t->write == '1';
-    result &= t->movement == 'R';
+    result &= t->movement == (char) 0;
     printf("├ Test 2 passing? -> %s\n", result == 1 ? "true" : "false");
     free(t->next_state);
     free(t->current_state);
@@ -481,8 +509,20 @@ int main() {
     result &= strcmp(t->next_state, "q") == 0;
     result &= t->read == '1';
     result &= t->write == '1';
-    result &= t->movement == 'R';
+    result &= t->movement == (char) 0;
     printf("├ Test 3 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    line = "(q0123,1)->(q,1,G)";
+    t = parse_line(line, strlen2(line));
+    result = strcmp(t->current_state, "q0123") == 0;
+    result &= strcmp(t->next_state, "q") == 0;
+    result &= t->read == '1';
+    result &= t->write == '1';
+    result &= t->movement == (char) -1;
+    printf("├ Test 4 passing? -> %s\n", result == 1 ? "true" : "false");
     free(t->next_state);
     free(t->current_state);
     free(t);
