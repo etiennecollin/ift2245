@@ -105,8 +105,8 @@ error_code no_of_lines(FILE *fp) {
  * @return le nombre de caractère ou ERROR si une erreur est survenue
  */
 error_code readline(FILE *fp, char **out, size_t max_len) {
-    // Check that the file pointer is not NULL
-    if (fp == NULL) return -1;
+    // Check that the file pointer and out pointer is not NULL
+    if (fp == NULL || out == NULL || *out == NULL) return -1;
 
     // Allocate memory for the string
     char *addr = malloc(max_len + 1);
@@ -373,7 +373,7 @@ int main() {
     // ====================
     printf("Ex-3\n");
 
-    // Allocate memory for the string and initialize the memory to zeros
+    // Allocate memory for the string
     char **read = malloc(sizeof(char *));
 
     // Open the file
