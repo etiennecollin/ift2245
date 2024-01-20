@@ -153,12 +153,104 @@ error_code memcpy2(void *dest, const void *src, size_t len) {
 }
 
 /**
+ * Reads a state from a line, skips the following comma and returns the state
+ * @param line the line to read from
+ * @param p the position in the line at which the state starts
+ * @return the state or NULL if an error occurred
+ */
+char *read_state(const char *line, size_t *p) {
+    // Allocate memory for the current state
+    char *current_state = malloc(sizeof(char) * 6);
+
+    // Verify that the malloc was successful
+    if (current_state == NULL) {
+        return NULL;
+    }
+
+    // Read the current state
+    size_t i = 0;
+    while (line[*p] != ',' && i < 5) {
+        current_state[i] = line[*p];
+        i++;
+        (*p)++;
+    }
+    current_state[i] = '\0';
+
+    // Skip the comma
+    (*p)++;
+
+    return current_state;
+}
+
+/**
  * Ex.5: Analyse une ligne de transition
  * @param line la ligne à lire
  * @param len la longueur de la ligne
  * @return la transition ou NULL en cas d'erreur
  */
-transition *parse_line(char *line, size_t len) { return NULL; }
+transition *parse_line(char *line, size_t len) {
+    // Keep the position in the line
+    // Initialize the position to 1 to skip the first parenthesis
+    size_t p = 1;
+
+    // ====================
+    // Current State
+    // ====================
+    // Read the current state
+    char *current_state = read_state(line, &p);
+    if (current_state == NULL) return NULL;
+
+    // ====================
+    // Read
+    // ====================
+    // Read the symbol to read
+    char read = line[p++];
+    p += 4; // Skip the )->(
+
+    // ====================
+    // Next State
+    // ====================
+    // Allocate memory for the current state
+    char *next_state = read_state(line, &p);
+    if (next_state == NULL) {
+        free(current_state);
+        return NULL;
+    }
+
+    // ====================
+    // Write
+    // ====================
+    // Read the symbol to read and add the null character
+    char write = line[p++];
+    p++; // Skip the comma
+
+    // ====================
+    // Movement
+    // ====================
+    // Read the movement
+    char movement = line[p++];
+
+    // ====================
+    // Initialize the transition
+    // ====================
+    // Allocate memory for a transition
+    transition *transition = malloc(sizeof(transition));
+
+    // Check that the malloc was successful
+    if (transition == NULL) {
+        free(current_state);
+        free(next_state);
+        return NULL;
+    }
+
+    transition->current_state = current_state;
+    transition->next_state = next_state;
+    transition->read = read;
+    transition->write = write;
+    transition->movement = movement;
+
+    return transition;
+}
 
 /**
  * Ex.6: Execute la machine de turing dont la description est fournie
