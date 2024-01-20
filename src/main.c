@@ -431,7 +431,7 @@ int main() {
     for (int i = 0; i < 100; i++) {
         passing = a[i] == b[i] && passing;
     }
-    printf("├ Test 3 passing? -> %s\n",passing == 1 ? "true" : "false");
+    printf("├ Test 3 passing? -> %s\n", passing == 1 ? "true" : "false");
 
     free(a);
     free(b);
@@ -446,6 +446,48 @@ int main() {
     free(b);
 
     printf("└ Done testing Ex-4\n");
+
+    // ====================
+    // Testing ex-5
+    // ====================
+    printf("Ex-5\n");
+    line = "(q0,0)->(qR,0,D)\n";
+    transition *t = parse_line(line, strlen2(line));
+    int result = strcmp(t->current_state, "q0") == 0;
+    result &= strcmp(t->next_state, "qR") == 0;
+    result &= t->read == '0';
+    result &= t->write == '0';
+    result &= t->movement == 'D';
+    printf("├ Test 1 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    line = "(q0,1)->(qA,1,R)";
+    t = parse_line(line, strlen2(line));
+    result = strcmp(t->current_state, "q0") == 0;
+    result &= strcmp(t->next_state, "qA") == 0;
+    result &= t->read == '1';
+    result &= t->write == '1';
+    result &= t->movement == 'R';
+    printf("├ Test 2 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    line = "(q0123,1)->(q,1,R)";
+    t = parse_line(line, strlen2(line));
+    result = strcmp(t->current_state, "q0123") == 0;
+    result &= strcmp(t->next_state, "q") == 0;
+    result &= t->read == '1';
+    result &= t->write == '1';
+    result &= t->movement == 'R';
+    printf("├ Test 3 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    printf("└ Done testing Ex-5\n");
 
     return 0;
 }
