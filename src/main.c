@@ -153,12 +153,132 @@ error_code memcpy2(void *dest, const void *src, size_t len) {
 }
 
 /**
+ * Reads a state from a line, skips the following comma and returns the state
+ * @param line the line to read from
+ * @param p the position in the line at which the state starts
+ * @return the state or NULL if an error occurred
+ */
+char *read_state(const char *line, size_t *p) {
+    // Allocate memory for the current state
+    char *current_state = malloc(sizeof(char) * 6);
+
+    // Verify that the malloc was successful
+    if (current_state == NULL) {
+        return NULL;
+    }
+
+    // Read the current state
+    size_t i = 0;
+    while (line[*p] != ',' && i < 5) {
+        current_state[i] = line[(*p)++];
+        i++;
+    }
+    current_state[i] = '\0';
+
+    // Skip the comma
+    (*p)++;
+
+    return current_state;
+}
+
+/**
+ * Reads a char from a line
+ * @param line the line to read from
+ * @param p the position in the line at which the char starts
+ * @return the char or 2 if an error occurred
+ */
+char parse_movement(const char *line, size_t *p) {
+    // Read the symbol to read
+    char read = line[(*p)++];
+
+    switch (read) {
+        case 'G':
+            return -1;
+        case 'R':
+            return 0;
+        case 'D':
+            return 1;
+        default:
+            return 2;
+    }
+}
+
+/**
  * Ex.5: Analyse une ligne de transition
  * @param line la ligne à lire
  * @param len la longueur de la ligne
  * @return la transition ou NULL en cas d'erreur
  */
-transition *parse_line(char *line, size_t len) { return NULL; }
+transition *parse_line(char *line, size_t len) {
+    // Keep the position in the line
+    // Initialize the position to 1 to skip the first parenthesis
+    size_t p = 1;
+
+    // ====================
+    // Current State
+    // ====================
+    // Read the current state
+    char *current_state = read_state(line, &p);
+    if (current_state == NULL) return NULL;
+
+    // ====================
+    // Read
+    // ====================
+    // Read the symbol to read
+    char read = line[p++];
+    p += 4; // Skip the )->(
+
+    // ====================
+    // Next State
+    // ====================
+    // Allocate memory for the current state
+    char *next_state = read_state(line, &p);
+    if (next_state == NULL) {
+        free(current_state);
+        return NULL;
+    }
+
+    // ====================
+    // Write
+    // ====================
+    // Read the symbol to read and add the null character
+    char write = line[p++];
+    p++; // Skip the comma
+
+    // ====================
+    // Movement
+    // ====================
+    // Read the movement
+    char movement = parse_movement(line, &p);
+
+    // Check that the movement is valid
+    if (movement == 2) {
+        free(current_state);
+        free(next_state);
+        return NULL;
+    }
+
+    // ====================
+    // Initialize the transition
+    // ====================
+    // Allocate memory for a transition
+    transition *transition = malloc(sizeof(transition));
+
+    // Check that the malloc was successful
+    if (transition == NULL) {
+        free(current_state);
+        free(next_state);
+        return NULL;
+    }
+
+    transition->current_state = current_state;
+    transition->next_state = next_state;
+    transition->read = read;
+    transition->write = write;
+    transition->movement = movement;
+
+    return transition;
+}
 
 /**
  * Ex.6: Execute la machine de turing dont la description est fournie
@@ -339,7 +459,7 @@ int main() {
     for (int i = 0; i < 100; i++) {
         passing = a[i] == b[i] && passing;
     }
-    printf("├ Test 3 passing? -> %s\n",passing == 1 ? "true" : "false");
+    printf("├ Test 3 passing? -> %s\n", passing == 1 ? "true" : "false");
 
     free(a);
     free(b);
@@ -354,6 +474,67 @@ int main() {
     free(b);
 
     printf("└ Done testing Ex-4\n");
+
+    // ====================
+    // Testing ex-5
+    // ====================
+    printf("Ex-5\n");
+    line = "(q0,0)->(qR,0,D)\n";
+    transition *t = parse_line(line, strlen2(line));
+    int result = strcmp(t->current_state, "q0") == 0;
+    result &= strcmp(t->next_state, "qR") == 0;
+    result &= t->read == '0';
+    result &= t->write == '0';
+    result &= t->movement == 1;
+    printf("├ Test 1 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    line = "(q0,1)->(qA,1,R)";
+    t = parse_line(line, strlen2(line));
+    result = strcmp(t->current_state, "q0") == 0;
+    result &= strcmp(t->next_state, "qA") == 0;
+    result &= t->read == '1';
+    result &= t->write == '1';
+    result &= t->movement == (char) 0;
+    printf("├ Test 2 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    line = "(q0123,1)->(q,1,R)";
+    t = parse_line(line, strlen2(line));
+    result = strcmp(t->current_state, "q0123") == 0;
+    result &= strcmp(t->next_state, "q") == 0;
+    result &= t->read == '1';
+    result &= t->write == '1';
+    result &= t->movement == (char) 0;
+    printf("├ Test 3 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    line = "(q0123,1)->(q,1,G)";
+    t = parse_line(line, strlen2(line));
+    result = strcmp(t->current_state, "q0123") == 0;
+    result &= strcmp(t->next_state, "q") == 0;
+    result &= t->read == '1';
+    result &= t->write == '1';
+    result &= t->movement == (char) -1;
+    printf("├ Test 4 passing? -> %s\n", result == 1 ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    line = "(q0,1)->(qA,1,R)";
+    t = parse_line(line, strlen2(line));
+    printf("├ Test 5 passing? -> %s\n", t != NULL ? "true" : "false");
+    free(t->next_state);
+    free(t->current_state);
+    free(t);
+
+    printf("└ Done testing Ex-5\n");
 
     return 0;
 }
