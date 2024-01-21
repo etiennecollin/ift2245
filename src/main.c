@@ -109,6 +109,7 @@ error_code readline(FILE *fp, char **out, size_t max_len) {
     if (fp == NULL || out == NULL) return -1;
 
     // Allocate memory for the string
+    // We allocate max_len + 1 to account for the null character that terminates the string
     char *addr = malloc(max_len + 1);
 
     // Check that the malloc was successful
