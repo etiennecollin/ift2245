@@ -321,7 +321,7 @@ error_code execute(char *machine_file, char *input) {
     int input_length = strlen2(input);
     if (input_length == ERROR) return ERROR;
 
-    // Create the "tape" and set the length to min(10000, 5 * input_length)
+    // Create the "tape" and set its default length
     int tape_length = input_length * 2;
     if (tape_length < 256) tape_length = 256;
 
