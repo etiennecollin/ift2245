@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "alltests",
+      "setup": "",
+      "run": "python3 names_validator.py && cd build && ctest --verbose",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 3,
+      "points": null
+    }
+  ]
+}
