@@ -73,6 +73,13 @@ struct command* cmd_parse(struct token* tokens) {
     while (tokens != NULL) {
         // initialize newCmd
         struct command *newCmd = (struct command*) malloc(sizeof(struct command));
+
+        // check that memory allocation was successful
+        if (newCmd == NULL) {
+            perror("Memory allocation error");
+            exit(EXIT_FAILURE);
+        }
+
         newCmd->next = NULL;
         newCmd->args = NULL;
         newCmd->op = OP_TERMINATOR;
@@ -81,26 +88,50 @@ struct command* cmd_parse(struct token* tokens) {
         int numOfArgs = countArgs(tokens);
 
         // allocate memory for command args
-        newCmd->args = (char **) malloc(sizeof(char **) * (numOfArgs));
+        newCmd->args = (char **) malloc(sizeof(char **) * (numOfArgs) + 1); // array of strings is null terminated
+        if (newCmd->args == NULL) { // check that memory allocation was successful
+            perror("Memory allocation error");
+            exit(EXIT_FAILURE);
+        }
 
         // build new command
         for (int i = 0; i < numOfArgs; i++) {
-            newCmd->args[i] = tokens->value;
+            newCmd->args[i] = tokens->value; // TODO : if token value == NULL, do smth
             tokens = tokens->next; // next token to be parsed
         }
+        newCmd->args[numOfArgs] = NULL; // array of strings is null terminated
 
         // token is a separator or NULL
-        newCmd->op = findOP(tokens->category);
+        newCmd->op = findOP(tokens->category); // TODO : if NULL, what do?
 
-        current->next = newCmd; // add the new command to the linked list
+        current->next = newCmd; // add the new command to the linked list of commands
         current = newCmd;
     }
     return sentinel.next;
 }
 
-void cmd_free(struct command *command)
-{
-    // TODO
+
+/**
+ * Iterates on the linked list of commands.
+ * For each command, deallocates the memory for the arguments. Then, deallocates the memory for the command.
+ * @param command the sentinel of the linked list of commands
+ */
+void cmd_free(struct command *command) {
+    struct command *current = command;
+
+    while (current != NULL) {
+        // First, deallocate memory for args
+        // current->args[i] == NULL indicates end of string array
+        for (int i = 0; current->args != NULL && current->args[i] != NULL; i++) {
+            free(current->args[i]); // deallocate memory for every arg
+        }
+        free(current->args); // deallocate memory of args array
+
+        // Second, deallocate command
+        struct command *temp = current; // keep reference of old command to deallocate it
+        current = current->next;
+        free(temp);
+    }
 }
 
 void cmd_debug_print(const struct command* commands)
@@ -124,6 +155,7 @@ void cmd_debug_print(const struct command* commands)
         printf("\n");
     }
 }
+
 
 
 
