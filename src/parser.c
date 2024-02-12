@@ -123,14 +123,11 @@ void cmd_free(struct command *command) {
     struct command *current = command;
 
     while (current != NULL) {
-        // First, deallocate memory for args
-        // Current->args[i] == NULL indicates end of string array
-        for (int i = 0; current->args != NULL && current->args[i] != NULL; i++) {
-            free(current->args[i]); // Deallocate memory for every arg
-        }
-        free(current->args); // Deallocate memory of args array
+        // Deallocate memory of args array
+        // The args themselves are deallocated by the tokenizer
+        free(current->args);
 
-        // Second, deallocate command
+        // Deallocate command
         struct command *temp = current; // Keep reference of old command to deallocate it
         current = current->next;
         free(temp);
