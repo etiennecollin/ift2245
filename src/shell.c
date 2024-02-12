@@ -12,6 +12,29 @@
 #define EXECUTION_REQUEST_EXIT 0
 
 /**
+ * Creates a new process
+ * @return the status of the child
+ */
+int execute_command(const struct command *cmd) {
+    pid_t pid = fork();
+    int status = 0;
+
+    if (pid < 0) { // error occurred
+        perror("Fork failed");
+        return EXECUTION_FAILED;
+    } else if (pid == 0) { // child process
+        int result = execvp(cmd->args[0], cmd->args); // returns -1 if the command failed
+        if (result == EXECUTION_FAILED) {
+            printf("%s: command not found\n", cmd->args[0]);
+        }
+    } else { // parent process
+        waitpid(pid, &status, 0);
+    }
+
+    return status;
+}
+
+/**
  * Cette fonction prend une liste de commandes et l'exécute.
  *
  * @param cmd list chainée de commandes
@@ -22,7 +45,13 @@ int sh_run(const struct command *cmd) {
     if (!cmd || cmd->args[0] == NULL) return EXECUTION_FAILED; // Empty command
     if (strcmp(cmd->args[0], "exit") == 0) return EXECUTION_REQUEST_EXIT; // Exit command
 
-    // TODO
+    struct command *current = cmd;
+
+    // execute the commands
+    while (current != NULL) {
+        execute_command(current);
+        current = current->next;
+    }
 
     return EXECUTION_REQUEST_EXIT;
 }
