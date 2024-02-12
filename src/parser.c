@@ -87,7 +87,7 @@ struct command *cmd_parse(struct token *tokens) {
         int arguments_count = count_arguments(tokens);
 
         // Allocate memory for command args
-        new_command->args = malloc(sizeof(new_command->args) * (arguments_count) + 1);
+        new_command->args = malloc(sizeof(new_command->args) * (arguments_count + 1));
 
         // Check that memory allocation was successful
         if (new_command->args == NULL) {
