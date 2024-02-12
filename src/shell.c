@@ -18,8 +18,7 @@
  *
  * @return le code de retour de la dernière commande exécutée.
  */
-int sh_run(const struct command *cmd)
-{
+int sh_run(const struct command *cmd) {
     if (!cmd || cmd->args[0] == NULL) return EXECUTION_FAILED; // Empty command
     if (strcmp(cmd->args[0], "exit") == 0) return EXECUTION_REQUEST_EXIT; // Exit command
 
@@ -28,30 +27,26 @@ int sh_run(const struct command *cmd)
     return EXECUTION_REQUEST_EXIT;
 }
 
-int main(void)
-{
-    for(;;)
-    {
-        struct token* tokens = tok_next_line();
+int main(void) {
+    while (1) {
+        struct token *tokens = tok_next_line();
 
-        if(!tokens) return EXECUTION_FAILED; // Tokenizer error
+        if (!tokens) return EXECUTION_FAILED; // Tokenizer error
 
-        //tok_debug_print(tokens);
+//        tok_debug_print(tokens);
 
-        struct command* commands = cmd_parse(tokens);
+        struct command *commands = cmd_parse(tokens);
 
-        if(!commands)
-        {
+        if (!commands) {
             tok_free(tokens);
             return EXECUTION_FAILED; // Parser error
         }
 
-        //cmd_debug_print(commands);
+//        cmd_debug_print(commands);
 
         int status = sh_run(commands);
 
-        if(status == EXECUTION_REQUEST_EXIT)
-        {
+        if (status == EXECUTION_REQUEST_EXIT) {
             exit(0);
         }
 
