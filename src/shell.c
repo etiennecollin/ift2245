@@ -15,14 +15,25 @@
  * Creates a new process
  * @return the status of the child
  */
-int execute_command(const struct command *cmd) {
+int execute_command(const struct command *cmd, enum op previous_op) {
     pid_t pid = fork();
     int status = 0;
+    int pipefd[2];
+    pipe(pipefd);
 
     if (pid < 0) { // error occurred
         perror("Fork failed");
         return EXECUTION_FAILED;
     } else if (pid == 0) { // child process
+
+        // Set the input and output
+        if (previous_op == OP_PIPE) {
+            dup2(pipefd[0], STDIN_FILENO);
+        }
+        if (cmd->op == OP_PIPE) {
+            dup2(pipefd[1], STDOUT_FILENO);
+        }
+
         int result = execvp(cmd->args[0], cmd->args); // returns -1 if the command failed
         if (result == EXECUTION_FAILED) {
             printf("%s: command not found\n", cmd->args[0]);
@@ -41,15 +52,18 @@ int execute_command(const struct command *cmd) {
  *
  * @return le code de retour de la dernière commande exécutée.
  */
-int sh_run(const struct command *cmd) {
+int sh_run(struct command *cmd) {
     if (!cmd || cmd->args[0] == NULL) return EXECUTION_FAILED; // Empty command
     if (strcmp(cmd->args[0], "exit") == 0) return EXECUTION_REQUEST_EXIT; // Exit command
 
-    struct command *current = cmd;
+    // Initialize the previous operator
+    enum op previous_op = (enum op) NULL;
 
-    // execute the commands
+    // Execute the commands
+    struct command *current = cmd;
     while (current != NULL) {
-        execute_command(current);
+        execute_command(current, previous_op);
+        previous_op = current->op;
         current = current->next;
     }
 
