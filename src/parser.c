@@ -11,13 +11,10 @@
  * @param category the category of the token
  * @return true if the token parsed is an argument for a command. False otherwise.
  */
-int isArg(enum token_category category) {
-    if (category == TOK_SEMICOLON ||
-        category == TOK_PIPE ||
-        category == TOK_LOGICAL_AND ||
-        category == TOK_LOGICAL_OR)
-        return 0;
-    else return 1;
+int is_arg(enum token_category category) {
+    if (category == TOK_SYMBOL || category == TOK_STRING_LITERAL)
+        return 1;
+    else return 0;
 }
 
 /**
@@ -26,24 +23,24 @@ int isArg(enum token_category category) {
  * @param tokens points to a token that is the first argument of a command
  * @return the number of arguments in a command
  */
-int countArgs(struct token* tokens) {
+int count_arguments(struct token *tokens) {
     struct token *current = tokens;
 
-    int ctr = 0; // counter
-    while (current != NULL && isArg(current->category)) {
-        ctr++;
+    int counter = 0;
+    while (current != NULL && is_arg(current->category)) {
+        counter++;
         current = current->next;
     }
 
-    return ctr;
+    return counter;
 }
 
 /**
  *
  * @return the op corresponding to the token category or -1 if error
  */
-int findOP(enum token_category category) {
-    switch(category) {
+enum op find_op(enum token_category category) {
+    switch (category) {
         case TOK_SEMICOLON:
             return OP_SEPARATOR;
         case TOK_PIPE:
@@ -51,11 +48,12 @@ int findOP(enum token_category category) {
         case TOK_LOGICAL_AND:
             return OP_AND;
         case TOK_LOGICAL_OR:
-            return TOK_LOGICAL_OR;
+            return OP_OR;
         case TOK_NEWLINE:
             return OP_TERMINATOR; // TODO is this okay?
-        default: // handles tok invalid, tok symbol, tok string literal
-            return -1;
+        default: // Handles tok invalid, tok symbol, tok string literal
+            perror("Invalid operator token category");
+            exit(EXIT_FAILURE);
     }
 }
 
@@ -64,48 +62,53 @@ int findOP(enum token_category category) {
  * @param tokens points to the first token in the linked list of tokens
  * @return A linked list of commands
  */
-struct command* cmd_parse(struct token* tokens) {
+struct command *cmd_parse(struct token *tokens) {
     // TODO : should we create a dummy token pointer to iterate through the token's linked list without losing the token pointer?
 
-    struct command sentinel = {NULL, NULL, OP_TERMINATOR}; // head of linked list
-    struct command *current = &sentinel;
+    struct command sentinel = {NULL, NULL, OP_TERMINATOR}; // Head of linked list
+    struct command *current_command_in_list = &sentinel;
 
     while (tokens != NULL) {
-        // initialize newCmd
-        struct command *newCmd = (struct command*) malloc(sizeof(struct command));
+        // Allocate new_command
+        struct command *new_command = malloc(sizeof(struct command));
 
-        // check that memory allocation was successful
-        if (newCmd == NULL) {
+        // Check that memory allocation was successful
+        if (new_command == NULL) {
             perror("Memory allocation error");
             exit(EXIT_FAILURE);
         }
 
-        newCmd->next = NULL;
-        newCmd->args = NULL;
-        newCmd->op = OP_TERMINATOR;
+        // Initialize new_command
+        new_command->next = NULL;
+        new_command->args = NULL;
+        new_command->op = OP_TERMINATOR;
 
-        // determine number of args of command
-        int numOfArgs = countArgs(tokens);
+        // Get number of tokens
+        int arguments_count = count_arguments(tokens);
 
-        // allocate memory for command args
-        newCmd->args = (char **) malloc(sizeof(char **) * (numOfArgs) + 1); // array of strings is null terminated
-        if (newCmd->args == NULL) { // check that memory allocation was successful
+        // Allocate memory for command args
+        new_command->args = malloc(sizeof(new_command->args) * (arguments_count) + 1);
+
+        // Check that memory allocation was successful
+        if (new_command->args == NULL) {
             perror("Memory allocation error");
             exit(EXIT_FAILURE);
         }
 
-        // build new command
-        for (int i = 0; i < numOfArgs; i++) {
-            newCmd->args[i] = tokens->value; // TODO : if token value == NULL, do smth
-            tokens = tokens->next; // next token to be parsed
+        // Store arguments
+        for (int i = 0; i < arguments_count; i++) {
+            new_command->args[i] = tokens->value;
+            tokens = tokens->next;
         }
-        newCmd->args[numOfArgs] = NULL; // array of strings is null terminated
+        new_command->args[arguments_count] = NULL; // Last element of args array is NULL
 
-        // token is a separator or NULL
-        newCmd->op = findOP(tokens->category); // TODO : if NULL, what do?
+        // Get operator
+        new_command->op = find_op(tokens->category);
+        tokens = tokens->next;
 
-        current->next = newCmd; // add the new command to the linked list of commands
-        current = newCmd;
+        // Add the new command to the linked list of commands
+        current_command_in_list->next = new_command;
+        current_command_in_list = new_command;
     }
     return sentinel.next;
 }
@@ -121,35 +124,44 @@ void cmd_free(struct command *command) {
 
     while (current != NULL) {
         // First, deallocate memory for args
-        // current->args[i] == NULL indicates end of string array
+        // Current->args[i] == NULL indicates end of string array
         for (int i = 0; current->args != NULL && current->args[i] != NULL; i++) {
-            free(current->args[i]); // deallocate memory for every arg
+            free(current->args[i]); // Deallocate memory for every arg
         }
-        free(current->args); // deallocate memory of args array
+        free(current->args); // Deallocate memory of args array
 
         // Second, deallocate command
-        struct command *temp = current; // keep reference of old command to deallocate it
+        struct command *temp = current; // Keep reference of old command to deallocate it
         current = current->next;
         free(temp);
     }
 }
 
-void cmd_debug_print(const struct command* commands)
-{
-    for(const struct command* cmd = commands; cmd; cmd = cmd->next)
-    {
-        for(int i = 0; cmd->args[i]; i++)
-        {
+void cmd_debug_print(const struct command *commands) {
+    for (const struct command *cmd = commands; cmd; cmd = cmd->next) {
+        for (int i = 0; cmd->args[i]; i++) {
             printf("%s ", cmd->args[i]);
         }
 
         switch (cmd->op) {
-            case OP_TERMINATOR: printf("OP_TERMINATOR"); break;
-            case OP_SEPARATOR: printf("OP_SEPARATOR"); break;
-            case OP_AND: printf("OP_AND"); break;
-            case OP_OR: printf("OP_OR"); break;
-            case OP_PIPE: printf("OP_PIPE"); break;
-            default: printf("OP_INVALID"); break;
+            case OP_TERMINATOR:
+                printf("OP_TERMINATOR");
+                break;
+            case OP_SEPARATOR:
+                printf("OP_SEPARATOR");
+                break;
+            case OP_AND:
+                printf("OP_AND");
+                break;
+            case OP_OR:
+                printf("OP_OR");
+                break;
+            case OP_PIPE:
+                printf("OP_PIPE");
+                break;
+            default:
+                printf("OP_INVALID");
+                break;
         }
 
         printf("\n");
