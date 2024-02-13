@@ -13,7 +13,7 @@
 
 /**
  * Creates a new process
- * @return the status of the child
+ * @return the execution status of the command, i.e., execution_failed or execution_success
  */
 int execute_command(const struct command *cmd, enum op previous_op, int previous_result, int pipe_fd[2]) {
     // Check for "OR" and "AND" operators
@@ -92,7 +92,7 @@ int sh_run(struct command *cmd) {
     struct command *current = cmd;
     while (current != NULL) {
         previous_result = execute_command(current, previous_op, previous_result, pipe_fd);
-        close (pipe_fd[1]);
+        close(pipe_fd[1]);
 
         // Check for exit command
         if (previous_result == EXECUTION_REQUEST_EXIT) return EXECUTION_REQUEST_EXIT;
