@@ -63,12 +63,15 @@ enum op find_op(enum token_category category) {
  * @return A linked list of commands
  */
 struct command *cmd_parse(struct token *tokens) {
-    // TODO : should we create a dummy token pointer to iterate through the token's linked list without losing the token pointer?
-
     struct command sentinel = {NULL, NULL, OP_TERMINATOR}; // Head of linked list
     struct command *current_command_in_list = &sentinel;
 
     while (tokens != NULL) {
+        if (tokens->category == TOK_INVALID) {
+            cmd_free(sentinel.next);
+            return NULL;
+        }
+
         // Allocate new_command
         struct command *new_command = malloc(sizeof(struct command));
 
