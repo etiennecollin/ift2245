@@ -30,7 +30,7 @@ int execute_command(const struct command *cmd, enum op previous_op, int previous
     int status = 0;
     pid_t pid = fork();
     if (pid < 0) { // error occurred
-        perror("Fork failed");
+        fprintf(stderr, "Fork failed\n");
         return EXECUTION_FAILED;
     }
 
@@ -84,7 +84,7 @@ int sh_run(struct command *cmd) {
     // Create a pipe
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
-        perror("pipe");
+        fprintf(stderr, "Error creating a pipe\n");
         return EXECUTION_FAILED;
     }
 
@@ -101,7 +101,8 @@ int sh_run(struct command *cmd) {
         current = current->next;
     }
 
-    return EXECUTION_REQUEST_EXIT;
+    // TODO do we return EXECUTION_SUCCESS or EXECUTION_REQUEST_EXIT?
+    return EXECUTION_SUCCESS;
 }
 
 int main(void) {
@@ -116,18 +117,19 @@ int main(void) {
 
         if (!commands) {
             tok_free(tokens);
+            // TODO if parsing returns NULL, do we want to continue or exit?
+            continue;
             return EXECUTION_FAILED; // Parser error
         }
 
 //        cmd_debug_print(commands);
 
         int status = sh_run(commands);
+        cmd_free(commands);
+        tok_free(tokens);
 
         if (status == EXECUTION_REQUEST_EXIT) {
             exit(0);
         }
-
-        cmd_free(commands);
-        tok_free(tokens);
     }
 }

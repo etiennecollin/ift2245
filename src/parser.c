@@ -6,8 +6,7 @@
 #include <memory.h>
 
 /**
- *
- * Determines whether a token is an argument
+ * Determines whether a token is an argument.
  * @param category the category of the token
  * @return true if the token parsed is an argument for a command. False otherwise.
  */
@@ -18,8 +17,19 @@ int is_arg(enum token_category category) {
 }
 
 /**
+ * Determines whether a token is a separator that is invalid as the first token of a command.
+ * @param category the category of the token
+ * @return true if the token parsed is an argument for a command. False otherwise.
+ */
+int is_invalid_first_sep(enum token_category category) {
+    if (category == TOK_PIPE || category == TOK_LOGICAL_AND || category == TOK_LOGICAL_OR)
+        return 1;
+    else return 0;
+}
+
+/**
  *
- * Counts the number of arguments in a command to determine how much memory to allocate
+ * Counts the number of arguments in a command to determine how much memory to allocate.
  * @param tokens points to a token that is the first argument of a command
  * @return the number of arguments in a command
  */
@@ -36,7 +46,7 @@ int count_arguments(struct token *tokens) {
 }
 
 /**
- *
+ * Finds the operator corresponding to the token category.
  * @return the op corresponding to the token category or -1 if error
  */
 enum op find_op(enum token_category category) {
@@ -50,21 +60,26 @@ enum op find_op(enum token_category category) {
         case TOK_LOGICAL_OR:
             return OP_OR;
         case TOK_NEWLINE:
-            return OP_TERMINATOR; // TODO is this okay?
+            return OP_TERMINATOR;
         default: // Handles tok invalid, tok symbol, tok string literal
-            perror("Invalid operator token category");
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "Invalid operator token category\n");
+            return EXIT_FAILURE;
     }
 }
 
 /**
- *
+ * Parses a linked list of tokens into a linked list of commands.
  * @param tokens points to the first token in the linked list of tokens
  * @return A linked list of commands
  */
 struct command *cmd_parse(struct token *tokens) {
     struct command sentinel = {NULL, NULL, OP_TERMINATOR}; // Head of linked list
     struct command *current_command_in_list = &sentinel;
+
+    if (is_invalid_first_sep(tokens->category)) {
+        fprintf(stderr, "Parsing error: first token is not valid\n");
+        return NULL;
+    }
 
     while (tokens != NULL) {
         if (tokens->category == TOK_INVALID) {
@@ -77,8 +92,8 @@ struct command *cmd_parse(struct token *tokens) {
 
         // Check that memory allocation was successful
         if (new_command == NULL) {
-            perror("Memory allocation error");
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "Memory allocation error\n");
+            return NULL;
         }
 
         // Initialize new_command
@@ -94,8 +109,9 @@ struct command *cmd_parse(struct token *tokens) {
 
         // Check that memory allocation was successful
         if (new_command->args == NULL) {
-            perror("Memory allocation error");
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "Memory allocation error\n");
+            cmd_free(sentinel.next);
+            return NULL;
         }
 
         // Store arguments
