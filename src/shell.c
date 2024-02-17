@@ -11,20 +11,39 @@
 #define EXECUTION_SUCCESS 1
 #define EXECUTION_REQUEST_EXIT 0
 
+int is_skipped_op(enum op op) {
+    return !(op == OP_AND || op == OP_OR || op == OP_SEPARATOR);
+}
+
 /**
  * Creates a new process
  * @return the execution status of the command, i.e., execution_failed or execution_success
  */
-int execute_command(const struct command *cmd, enum op previous_op, int previous_result, int pipe_fd[2]) {
-    // Check for "OR" and "AND" operators
-    if (previous_op == OP_AND && previous_result == EXECUTION_FAILED) {
+int execute_command(const struct command *cmd, enum op previous_op, int previous_result, int *is_skipping,
+                    int *previous_pipe_output) {
+    // If the previous command failed and the operator is "AND", skip the current command
+    // If the previous command succeeded and the operator is "OR", skip the current command
+    // If we are skipping and the current operator is "skipped operator", skip the current command
+    // Otherwise, reset the skipping flag
+    if ((previous_op == OP_AND && previous_result == EXECUTION_FAILED) ||
+        (previous_op == OP_OR && previous_result == EXECUTION_SUCCESS)) {
+        *is_skipping = 1;
         return previous_result;
-    } else if (previous_op == OP_OR && previous_result == EXECUTION_SUCCESS) {
+    } else if (*is_skipping == 1 && is_skipped_op(previous_op)) {
         return previous_result;
+    } else {
+        *is_skipping = 0;
     }
 
     // Check for exit command
     if (strcmp(cmd->args[0], "exit") == 0) return EXECUTION_REQUEST_EXIT;
+
+    // Create a pipe
+    int pipe_fd[2];
+    if (pipe(pipe_fd) == -1) {
+        fprintf(stderr, "Error creating a pipe\n");
+        exit(EXECUTION_FAILED);
+    }
 
     // Fork and execute the command
     int status = 0;
@@ -36,11 +55,12 @@ int execute_command(const struct command *cmd, enum op previous_op, int previous
 
     // Run the child process
     if (pid == 0) {
-        // Set the input and output
+        // Set STDIN to the previous pipe output
         if (previous_op == OP_PIPE) {
-            dup2(pipe_fd[0], STDIN_FILENO);
-            close(pipe_fd[0]);
+            dup2(*previous_pipe_output, STDIN_FILENO);
         }
+
+        // Set STDOUT to the write end of the pipe
         if (cmd->op == OP_PIPE) {
             dup2(pipe_fd[1], STDOUT_FILENO);
             close(pipe_fd[1]);
@@ -51,12 +71,16 @@ int execute_command(const struct command *cmd, enum op previous_op, int previous
 
         // If execvp returns, it must have failed
         if (return_value != 0) {
-            printf("%s: command not found\n", cmd->args[0]);
+            fprintf(stderr, "%s: command not found\n", cmd->args[0]);
             exit(EXECUTION_FAILED);
         }
     } else {
         // Wait for the child process to finish
         waitpid(pid, &status, 0);
+
+        // Close the write end of the pipe and update the previous pipe output
+        close(pipe_fd[1]);
+        *previous_pipe_output = pipe_fd[0];
     }
 
     // Check exit status
@@ -77,31 +101,26 @@ int execute_command(const struct command *cmd, enum op previous_op, int previous
 int sh_run(struct command *cmd) {
     if (!cmd || cmd->args[0] == NULL) return EXECUTION_FAILED; // Empty command
 
-    // Initialize the previous operator
+    // Initialize variables
     enum op previous_op = (enum op) NULL;
     int previous_result = EXECUTION_SUCCESS;
-
-    // Create a pipe
-    int pipe_fd[2];
-    if (pipe(pipe_fd) == -1) {
-        fprintf(stderr, "Error creating a pipe\n");
-        return EXECUTION_FAILED;
-    }
+    int is_skipping = 0;
+    int previous_pipe_output = STDIN_FILENO;
 
     // Execute the commands
-    struct command *current = cmd;
-    while (current != NULL) {
-        previous_result = execute_command(current, previous_op, previous_result, pipe_fd);
-        close(pipe_fd[1]);
+    struct command *current_command = cmd;
+    while (current_command != NULL) {
+        // Execute the command
+        previous_result = execute_command(current_command, previous_op, previous_result, &is_skipping,
+                                          &previous_pipe_output);
 
         // Check for exit command
         if (previous_result == EXECUTION_REQUEST_EXIT) return EXECUTION_REQUEST_EXIT;
 
-        previous_op = current->op;
-        current = current->next;
+        previous_op = current_command->op;
+        current_command = current_command->next;
     }
 
-    // TODO do we return EXECUTION_SUCCESS or EXECUTION_REQUEST_EXIT?
     return EXECUTION_SUCCESS;
 }
 
@@ -109,7 +128,7 @@ int main(void) {
     while (1) {
         struct token *tokens = tok_next_line();
 
-        if (!tokens) return EXECUTION_FAILED; // Tokenizer error
+        if (!tokens) continue;
 
 //        tok_debug_print(tokens);
 
@@ -117,9 +136,7 @@ int main(void) {
 
         if (!commands) {
             tok_free(tokens);
-            // TODO if parsing returns NULL, do we want to continue or exit?
             continue;
-            return EXECUTION_FAILED; // Parser error
         }
 
 //        cmd_debug_print(commands);
