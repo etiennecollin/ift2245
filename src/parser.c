@@ -110,9 +110,15 @@ struct command *cmd_parse(struct token *tokens) {
 
         // Check if there are no arguments
         if (arguments_count == 0) {
-            fprintf(stderr, "Parsing error: no arguments\n");
-            cmd_free(sentinel.next);
-            return NULL;
+            if (is_invalid_first_sep(tokens->category)) {
+                fprintf(stderr, "Parsing error: no arguments\n");
+                cmd_free(sentinel.next);
+                return NULL;
+            } else {
+                free(new_command);
+                tokens = tokens->next;
+                continue;
+            }
         }
 
         // Allocate memory for command args
@@ -140,6 +146,7 @@ struct command *cmd_parse(struct token *tokens) {
         current_command_in_list->next = new_command;
         current_command_in_list = new_command;
     }
+
     return sentinel.next;
 }
 
