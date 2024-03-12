@@ -7,12 +7,20 @@
 #include "process.h"
 
 typedef struct ready_queue ready_queue_t;
+typedef struct node node_t;
 
 struct ready_queue {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
-
     // TODO: Add fields here
+    node_t *head;
+    node_t *tail;
+    size_t size;
+};
+
+struct node {
+    process_t *process;
+    struct node *next;
 };
 
 /**

@@ -14,9 +14,9 @@ struct worker {
     ready_queue_t *ready_queue;
 };
 
-void* worker_run(void* user_data);
+void *worker_run(void *user_data);
 
-worker_t* worker_create(int core, ready_queue_t *ready_queue);
+worker_t *worker_create(int core, ready_queue_t *ready_queue);
 
 void worker_destroy(worker_t *worker);
 
