@@ -15,7 +15,6 @@ process_t *create_process(int pid) {
     memset(process, 0, sizeof(process_t));
     process->pid = pid;
     process->burst_length = 0;
-    process->priority_level = BASE_PRIORITY_LEVEL;
     return process;
 }
 
