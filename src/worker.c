@@ -99,7 +99,7 @@ void update_priority_level(process_t *process, int status) {
             break;
         default:
             // Process completed its burst, reset priority level to base
-            process->priority_level = HIGH_PRIORITY_LEVEL;
+            process->priority_level = BASE_PRIORITY_LEVEL;
             break;
 
     }
