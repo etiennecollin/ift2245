@@ -6,7 +6,7 @@
 #include "process.h"
 #include "os.h"
 
-uint64_t INITIAL_QUANTUM = 0; // Initial quantum for all priority levels
+const uint64_t INITIAL_QUANTUM = 0; // Initial quantum for all priority levels
 
 // Weight of the new recorded burst in the quantum average calculation
 const float ALPHA_LOW = 0.4; // If the new recorded burst is lower than the current quantum
@@ -15,7 +15,7 @@ const float ALPHA_HIGH = 0.15; // If the new recorded burst is higher than the c
 // Constant factor multiplying the new recorded burst
 // The higher the priority level, the lower the constant factor
 // The order of the constants is {BASE_PRIORITY, LOW_PRIORITY, HIGH_PRIORITY}
-const float CONSTANTS[] = {1.1, 1.2, 1.0}; // Constant factor multiplying the new recorded burst
+const float CONSTANTS[] = {1, 1.1, 0.9}; // Constant factor multiplying the new recorded burst
 
 
 void *worker_run(void *user_data) {
