@@ -23,7 +23,6 @@ const float ALPHA_HIGH = 0.1;
 // The order of the constants is goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
 const float CONSTANTS[] = {0.6, 1.1, 1.2};
-//const float CONSTANTS[] = {0.1,0.4,0.6};
 
 // Time in seconds to wait before checking if the priority level of a process needs to be increased
 const int BOOST_TIME = 5;
@@ -63,7 +62,7 @@ void *worker_run(void *user_data) {
         process->burst_length += os_time() - start_time;
 
         // Adjust priority level based on process behavior
-//        update_priority_level(process, ready_queue);
+        update_priority_level(process, ready_queue);
 
         // If the process was preempted or blocked, push it back to the ready queue
         pthread_mutex_lock(&process->mutex);
