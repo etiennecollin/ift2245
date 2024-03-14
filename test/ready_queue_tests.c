@@ -23,8 +23,8 @@ START_TEST(test_ready_queue_push_size_one)
     struct ready_queue queue;
     ready_queue_init(&queue);
 
-    struct process process = {0};
-    ready_queue_push(&queue, &process);
+    struct process* process = create_process(0);
+    ready_queue_push(&queue, process);
 
     size_t size = ready_queue_size(&queue);
 
@@ -39,10 +39,10 @@ START_TEST(test_ready_queue_push_size_two)
     struct ready_queue queue;
     ready_queue_init(&queue);
 
-    struct process process1 = {0};
-    struct process process2 = {0};
-    ready_queue_push(&queue, &process1);
-    ready_queue_push(&queue, &process2);
+    struct process* process1 = create_process(0);
+    struct process* process2 = create_process(1);
+    ready_queue_push(&queue, process1);
+    ready_queue_push(&queue, process2);
 
     size_t size = ready_queue_size(&queue);
 
@@ -57,9 +57,9 @@ START_TEST(test_ready_queue_push_pop_size_zero)
     struct ready_queue queue;
     ready_queue_init(&queue);
 
-    struct process process = {0};
+    struct process* process = create_process(0);
 
-    ready_queue_push(&queue, &process);
+    ready_queue_push(&queue, process);
     ready_queue_pop(&queue);
 
     size_t size = ready_queue_size(&queue);
@@ -75,10 +75,10 @@ START_TEST(test_ready_queue_push_push_pop_size_one)
     struct ready_queue queue;
     ready_queue_init(&queue);
 
-    struct process process = {0};
+    struct process* process = create_process(0);
 
-    ready_queue_push(&queue, &process);
-    ready_queue_push(&queue, &process);
+    ready_queue_push(&queue, process);
+    ready_queue_push(&queue, process);
     ready_queue_pop(&queue);
 
     size_t size = ready_queue_size(&queue);
@@ -90,16 +90,15 @@ START_TEST(test_ready_queue_push_push_pop_size_one)
 END_TEST
 
 
-START_TEST(test_ready_queue_push_pop_multiple)
-{
+START_TEST(test_ready_queue_push_pop_multiple) {
     struct ready_queue queue;
     ready_queue_init(&queue);
 
-    struct process process[100];
+    struct process* process[100];
 
     for (int i = 0; i < 100; i++) {
-        process[i].pid = i;
-        ready_queue_push(&queue, &process[i]);
+        process[i] = create_process(i);
+        ready_queue_push(&queue, process[i]);
     }
 
     int found[100] = {0};
@@ -190,4 +189,3 @@ int main(void)
 
     return (number_failed == 0) ? 0 : 1;
 }
-
