@@ -22,7 +22,7 @@ const float ALPHA_HIGH = 0.1;
 // The higher the priority level, the lower the constant factor
 // The order of the constants is goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
-const float CONSTANTS[] = {0.6, 1.1, 1.2};
+const float CONSTANTS[] = {0, 0.6, 0.9, 1.0};
 
 // Time in seconds to wait before checking if the priority level of a process needs to be increased
 const int BOOST_TIME = 5;
@@ -34,7 +34,9 @@ void *worker_run(void *user_data) {
 
     // Initialize the quantums
     uint64_t quantums[NUM_PRIORITY_LEVELS];
-    for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+
+    quantums[MAX_PRIORITY_LEVEL] = 1;
+    for (int i = 1; i < NUM_PRIORITY_LEVELS; i++) {
         quantums[i] = INITIAL_QUANTUM;
     }
 
@@ -86,7 +88,7 @@ void *worker_run(void *user_data) {
 
 void update_quantums(process_t *process, uint64_t *quantums) {
     // If quantum is 0, initialize it with the recorded burst of the first process
-    for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+    for (int i = 1; i < NUM_PRIORITY_LEVELS; i++) {
         if (quantums[i] == 0) {
             quantums[i] = process->burst_length * CONSTANTS[i];
         } else {
@@ -117,7 +119,7 @@ void *priority_monitor_thread(void *thread_data) {
     pthread_mutex_lock(&process->mutex);
     if (process->priority_level <= current_priority && !process->status) {
         // Increase priority back by 1
-        process->priority_level = max(process->priority_level - 1, MAX_PRIORITY_LEVEL);
+        process->priority_level = max(process->priority_level - 1, MAX_PRIORITY_LEVEL + 1);
 
         // Check if the process needs to be moved to a different queue
         if (process->priority_level != current_priority) {
@@ -141,7 +143,7 @@ void update_priority_level(process_t *process, ready_queue_t *ready_queue) {
             process->priority_level = min(process->priority_level + 1, MIN_PRIORITY_LEVEL);
             pthread_mutex_unlock(&process->mutex);
 
-            if (BOOST_TIME != 0) {
+            if (BOOST_TIME != 0 && NUM_PRIORITY_LEVELS > 2) {
                 // Create an instance of the structure and populate it with process and ready_queue data
                 // Allocate memory for the struct
                 queue_process_data_t *data = malloc(sizeof(queue_process_data_t));
@@ -156,14 +158,16 @@ void update_priority_level(process_t *process, ready_queue_t *ready_queue) {
             break;
         case OS_RUN_BLOCKED:
             // Process was blocked, promote priority level
-            pthread_mutex_lock(&process->mutex);
-            process->priority_level = max(process->priority_level - 1, MAX_PRIORITY_LEVEL);
-            pthread_mutex_unlock(&process->mutex);
+            if (NUM_PRIORITY_LEVELS > 2) {
+                pthread_mutex_lock(&process->mutex);
+                process->priority_level = max(process->priority_level - 1, MAX_PRIORITY_LEVEL + 1);
+                pthread_mutex_unlock(&process->mutex);
+            }
             break;
         default:
             // Process completed its burst, reset priority level to base
             pthread_mutex_lock(&process->mutex);
-            process->priority_level = DEFAULT_PRIORITY_LEVEL;
+            process->priority_level = DEFAULT_PRIORITY_LEVEL + 1;
             pthread_mutex_unlock(&process->mutex);
             break;
 
@@ -184,7 +188,6 @@ worker_t *worker_create(int core, ready_queue_t *ready_queue) {
 }
 
 void worker_destroy(worker_t *worker) {
-    pthread_join(worker->thread, NULL);
     free(worker);
 }
 

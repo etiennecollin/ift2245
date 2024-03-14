@@ -21,19 +21,21 @@ void ready_queue_init(ready_queue_t *queue) {
 
 void ready_queue_destroy(ready_queue_t *queue) {
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+        pthread_mutex_lock(&queue->mutex[i]);
         node_t *current = queue->head[i];
         while (current != NULL) {
             node_t *next = current->next;
             free(current);
             current = next;
         }
+        pthread_mutex_unlock(&queue->mutex[i]);
         pthread_mutex_destroy(&queue->mutex[i]);
     }
     pthread_cond_destroy(&queue->cond);
 }
 
 void ready_queue_push(ready_queue_t *queue, process_t *process) {
-    int priority = DEFAULT_PRIORITY_LEVEL;
+    int priority = DEFAULT_PRIORITY_LEVEL + 1;
     if (process != NULL) {
         priority = process->priority_level;
     }
