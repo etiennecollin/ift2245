@@ -10,8 +10,8 @@ uint64_t quantum = 0; // In milliseconds
 
 // Weight of the new recorded burst in the quantum average calculation
 const float alpha_low = 0.4; // If the new recorded burst is lower than the current quantum
-const float alpha_high = 0.15; // If the new recorded burst is higher than the current quantum
-const float gamma = 1.2; // Constant factor multiplying the new recorded burst
+const float alpha_high = 0.10; // If the new recorded burst is higher than the current quantum
+const float gamma = 0.95; // Constant factor multiplying the new recorded burst
 
 // Update quantum with a dynamic leaky filter average given the recorded burst of a process
 void *update_quantum(process_t *process) {
