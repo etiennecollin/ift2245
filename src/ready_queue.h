@@ -74,8 +74,10 @@ process_t *ready_queue_pop(ready_queue_t *queue);
  *
  * @param queue the ready queue
  * @param process the removed process
+ *
+ * @return 0 if the process was removed, 1 otherwise
  */
-void ready_queue_remove(ready_queue_t *queue, process_t *process);
+int ready_queue_remove(ready_queue_t *queue, process_t *process);
 /**
  * Cette fonction retourne la taille de la file d'attente.
  *

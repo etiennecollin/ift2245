@@ -77,9 +77,7 @@ void *worker_run(void *user_data) {
                 os_start_io(process);
                 break;
             case OS_RUN_DONE:
-                process->status = 1;
                 break;
-
         }
         pthread_mutex_unlock(&process->mutex);
     }
@@ -112,20 +110,24 @@ void *priority_monitor_thread(void *thread_data) {
     process_t *process = ((struct queue_process_data *) thread_data)->process;
     ready_queue_t *ready_queue = ((struct queue_process_data *) thread_data)->ready_queue;
 
-    int current_priority = process->priority_level;
-    sleep(BOOST_TIME);  // Sleep for 5 seconds
+    // Store the initial priority level of the process
+    int initial_priority = process->priority_level;
 
-    // Check if the priority is still the same or decreased after 5 seconds
+    // Sleep for a while
+    sleep(BOOST_TIME);
+
+    // Check if the priority is still the same or decreased during the sleep
     pthread_mutex_lock(&process->mutex);
-    if (process->priority_level <= current_priority && !process->status) {
-        // Increase priority back by 1
-        process->priority_level = max(process->priority_level - 1, MAX_PRIORITY_LEVEL + 1);
+    if (process->status != OS_RUN_DONE && process->priority_level >= initial_priority) {
+        // Increase priority back to what it was
+        process->priority_level = max(initial_priority, MAX_PRIORITY_LEVEL + 1);
 
-        // Check if the process needs to be moved to a different queue
-        if (process->priority_level != current_priority) {
-            // Remove the process from the ready queue
-            ready_queue_remove(ready_queue, process);
-            // Add the process to the new ready queue
+        // Remove the process from the ready queue if it is there
+        // If it is not in the queue, then the process will be added back to the ready queue
+        // by the worker or OS automatically.
+        int was_removed = ready_queue_remove(ready_queue, process);
+        if (was_removed) {
+            // Add the process to the right priority level ready queue
             ready_queue_push(ready_queue, process);
         }
     }
@@ -164,10 +166,10 @@ void update_priority_level(process_t *process, ready_queue_t *ready_queue) {
                 pthread_mutex_unlock(&process->mutex);
             }
             break;
-        default:
-            // Process completed its burst, reset priority level to base
+        case OS_RUN_DONE:
+            // Process is done, reset priority level
             pthread_mutex_lock(&process->mutex);
-            process->priority_level = DEFAULT_PRIORITY_LEVEL + 1;
+            process->priority_level = MIN_PRIORITY_LEVEL;
             pthread_mutex_unlock(&process->mutex);
             break;
 

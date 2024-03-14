@@ -17,7 +17,7 @@ process_t *create_process(int pid) {
     process->pid = pid;
     process->burst_length = 0;
     process->priority_level = DEFAULT_PRIORITY_LEVEL;
-    process->status = OS_RUN_PREEMPTED;
+    process->status = -1;
     pthread_mutex_init(&process->mutex, NULL);
     return process;
 }

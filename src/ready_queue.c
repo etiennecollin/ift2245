@@ -117,9 +117,9 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
 }
 
 
-void ready_queue_remove(ready_queue_t *queue, process_t *process) {
+int ready_queue_remove(ready_queue_t *queue, process_t *process) {
     if (process == NULL)
-        return;
+        return 0;
 
     int priority = process->priority_level;
 
@@ -129,22 +129,34 @@ void ready_queue_remove(ready_queue_t *queue, process_t *process) {
     // Traverse the queue to find and remove the process
     node_t *current = queue->head[priority];
     node_t *prev = NULL;
+    int was_found = 0;
     while (current != NULL) {
         if (current->process == process) {
-            if (prev == NULL) { // Process is at the head of the queue
+            was_found = 1;
+            // Process is at the head of the queue
+            if (prev == NULL) {
+                // Update the head of the queue
                 queue->head[priority] = current->next;
-                if (queue->tail[priority] == current) { // Process is the only one in the queue
+
+                // If process is the only one in the queue
+                // update the tail of the queue
+                if (queue->tail[priority] == current) {
                     queue->tail[priority] = NULL;
                 }
             } else {
+                // Update the next of the previous node
                 prev->next = current->next;
-                if (queue->tail[priority] == current) { // Process is at the tail of the queue
+
+                // If process is at the tail of the queue
+                // update the tail of the queue
+                if (queue->tail[priority] == current) {
                     queue->tail[priority] = prev;
                 }
             }
-            free(current); // Free the node
-            queue->size[priority]--; // Decrement the size
-            break; // Exit the loop after removing the process
+            // Free the node and decrement the size
+            free(current);
+            queue->size[priority]--;
+            break;
         }
         prev = current;
         current = current->next;
@@ -152,6 +164,8 @@ void ready_queue_remove(ready_queue_t *queue, process_t *process) {
 
     // Unlock the queue
     pthread_mutex_unlock(&queue->mutex[priority]);
+
+    return was_found;
 }
 
 
