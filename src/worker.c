@@ -22,11 +22,11 @@ const float ALPHA_HIGH = 0.1;
 // The higher the priority level, the lower the constant factor
 // The order of the constants is goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
-const float CONSTANTS[] = {0.6, 1.1, 1.2, 1.6};
+const float CONSTANTS[] = {0.6, 1.1, 1.2};
 //const float CONSTANTS[] = {0.1,0.4,0.6};
 
 // Time in seconds to wait before checking if the priority level of a process needs to be increased
-const int BOOST_TIME = 2;
+const int BOOST_TIME = 5;
 
 
 void *worker_run(void *user_data) {
@@ -57,13 +57,13 @@ void *worker_run(void *user_data) {
         // Run the process
         pthread_mutex_lock(&process->mutex);
         process->status = os_run_process(process, worker->core, quantum);
+        pthread_mutex_unlock(&process->mutex);
 
         // Update the burst length of the process
         process->burst_length += os_time() - start_time;
-        pthread_mutex_unlock(&process->mutex);
 
         // Adjust priority level based on process behavior
-        update_priority_level(process, ready_queue);
+//        update_priority_level(process, ready_queue);
 
         // If the process was preempted or blocked, push it back to the ready queue
         pthread_mutex_lock(&process->mutex);
@@ -118,7 +118,7 @@ void *priority_monitor_thread(void *thread_data) {
     pthread_mutex_lock(&process->mutex);
     if (process->priority_level <= current_priority && !process->status) {
         // Increase priority back by 1
-        process->priority_level = min(process->priority_level + 1, MAX_PRIORITY_LEVEL);
+        process->priority_level = max(process->priority_level - 1, MAX_PRIORITY_LEVEL);
 
         // Check if the process needs to be moved to a different queue
         if (process->priority_level != current_priority) {
@@ -139,24 +139,26 @@ void update_priority_level(process_t *process, ready_queue_t *ready_queue) {
         case OS_RUN_PREEMPTED:
             // Process was preempted, demote priority level
             pthread_mutex_lock(&process->mutex);
-            process->priority_level = max(process->priority_level - 1, MIN_PRIORITY_LEVEL);
+            process->priority_level = min(process->priority_level + 1, MIN_PRIORITY_LEVEL);
             pthread_mutex_unlock(&process->mutex);
 
-            // Create an instance of the structure and populate it with process and ready_queue data
-            // Allocate memory for the struct
-            queue_process_data_t *data = malloc(sizeof(queue_process_data_t));
-            data->process = process;
-            data->ready_queue = ready_queue;
+            if (BOOST_TIME != 0) {
+                // Create an instance of the structure and populate it with process and ready_queue data
+                // Allocate memory for the struct
+                queue_process_data_t *data = malloc(sizeof(queue_process_data_t));
+                data->process = process;
+                data->ready_queue = ready_queue;
 
-            // Start a new thread to monitor the priority change
-            pthread_t monitor_thread;
-            pthread_create(&monitor_thread, NULL, priority_monitor_thread, data);
-            pthread_detach(monitor_thread);  // Detach the thread to avoid memory leak
+                // Start a new thread to monitor the priority change
+                pthread_t monitor_thread;
+                pthread_create(&monitor_thread, NULL, priority_monitor_thread, data);
+                pthread_detach(monitor_thread);  // Detach the thread to avoid memory leak
+            }
             break;
         case OS_RUN_BLOCKED:
             // Process was blocked, promote priority level
             pthread_mutex_lock(&process->mutex);
-            process->priority_level = min(process->priority_level + 1, MAX_PRIORITY_LEVEL);
+            process->priority_level = max(process->priority_level - 1, MAX_PRIORITY_LEVEL);
             pthread_mutex_unlock(&process->mutex);
             break;
         default:
