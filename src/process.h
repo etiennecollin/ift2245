@@ -1,22 +1,24 @@
 #ifndef TP2_PROCESS_H
 #define TP2_PROCESS_H
 
-#define BASE_PRIORITY_LEVEL 0
-#define LOW_PRIORITY_LEVEL 1
-#define HIGH_PRIORITY_LEVEL 2
 #define NUM_PRIORITY_LEVELS 3
+#define MIN_PRIORITY_LEVEL 0
+#define MAX_PRIORITY_LEVEL (NUM_PRIORITY_LEVELS - 1)
+#define DEFAULT_PRIORITY_LEVEL MAX_PRIORITY_LEVEL
 
 #include <stdint.h>
+#include <pthread.h>
 
 typedef struct process process_t;
 
-struct process
-{
+struct process {
     int pid; // Don't change this!
 
     // TODO: add more fields here if needed
     uint64_t burst_length;
     int priority_level;
+    int status;
+    pthread_mutex_t mutex;
 };
 
 /**
@@ -26,13 +28,13 @@ struct process
  *
  * @return le processus créé
  */
-process_t* create_process(int pid);
+process_t *create_process(int pid);
 
 /**
  * Cette fonction détruit un processus.
  *
  * @param process le processus à détruire
  */
-void destroy_process(process_t* process);
+void destroy_process(process_t *process);
 
 #endif

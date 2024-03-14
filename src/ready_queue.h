@@ -10,12 +10,13 @@ typedef struct ready_queue ready_queue_t;
 typedef struct node node_t;
 
 struct ready_queue {
-    pthread_mutex_t mutex;
+    pthread_mutex_t mutex[NUM_PRIORITY_LEVELS];
     pthread_cond_t cond;
+    pthread_mutex_t global_mutex;
     // TODO: Add fields here
-    node_t *head;
-    node_t *tail;
-    size_t size;
+    node_t *head[NUM_PRIORITY_LEVELS];
+    node_t *tail[NUM_PRIORITY_LEVELS];
+    size_t size[NUM_PRIORITY_LEVELS];
 };
 
 struct node {
@@ -67,6 +68,14 @@ void ready_queue_push(ready_queue_t *queue, process_t *process);
  */
 process_t *ready_queue_pop(ready_queue_t *queue);
 
+
+/**
+ *  This function removes a process from its queue.
+ *
+ * @param queue the ready queue
+ * @param process the removed process
+ */
+void ready_queue_remove(ready_queue_t *queue, process_t *process);
 /**
  * Cette fonction retourne la taille de la file d'attente.
  *
