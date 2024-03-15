@@ -8,37 +8,17 @@
 
 #include <unistd.h>  // For sleep function
 
-
-const uint64_t INITIAL_QUANTUM = 0; // Initial quantum for all priority levels
-
-// Weight of the new recorded burst in the quantum average calculation
-// if the new recorded burst is lower than the current quantum
-const float ALPHA_LOW = 0.4;
-// Weight of the new recorded burst in the quantum average calculation
-// if the new recorded burst is higher than the current quantum
-const float ALPHA_HIGH = 0.1;
-
-// Constant factor multiplying the new recorded burst
-// The higher the priority level, the lower the constant factor
-// The order of the constants is goes from the highest priority level to the lowest
-// i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
-const float CONSTANTS[] = {0, 0.6, 0.9, 1.0};
+#define INITIAL_QUANTUM 125
 
 // Time in seconds to wait before checking if the priority level of a process needs to be increased
-const int BOOST_TIME = 5;
+const int BOOST_TIME = 3;
 
+uint64_t quantum_average = INITIAL_QUANTUM;
+int counter = 0;
 
 void *worker_run(void *user_data) {
     worker_t *worker = (worker_t *) user_data;
     ready_queue_t *ready_queue = worker->ready_queue;
-
-    // Initialize the quantums
-    uint64_t quantums[NUM_PRIORITY_LEVELS];
-
-    quantums[MAX_PRIORITY_LEVEL] = 1;
-    for (int i = 1; i < NUM_PRIORITY_LEVELS; i++) {
-        quantums[i] = INITIAL_QUANTUM;
-    }
 
     process_t *process = NULL;
     uint64_t quantum;
@@ -49,8 +29,11 @@ void *worker_run(void *user_data) {
         // No more processes (poison pill)
         if (process == NULL) break;
 
-        // Get the quantum for the current priority level
-        quantum = quantums[process->priority_level];
+        // Get the quantum_average for the current priority level
+        quantum = quantum_average * max(1, process->priority_level / 1.5);
+        if (process->priority_level == MAX_PRIORITY_LEVEL) {
+            quantum = 1;
+        }
 
         // Set the arrival time of the process
         uint64_t start_time = os_time();
@@ -61,7 +44,9 @@ void *worker_run(void *user_data) {
         pthread_mutex_unlock(&process->mutex);
 
         // Update the burst length of the process
-        process->burst_length += os_time() - start_time;
+        if (!process->found_burst) {
+            process->burst_length += os_time() - start_time;
+        }
 
         // Adjust priority level based on process behavior
         update_priority_level(process, ready_queue);
@@ -73,7 +58,7 @@ void *worker_run(void *user_data) {
                 ready_queue_push(ready_queue, process);
                 break;
             case OS_RUN_BLOCKED:
-                update_quantums(process, quantums);
+                update_quantums(process);
                 os_start_io(process);
                 break;
             case OS_RUN_DONE:
@@ -84,25 +69,12 @@ void *worker_run(void *user_data) {
     return NULL;
 }
 
-void update_quantums(process_t *process, uint64_t *quantums) {
-    // If quantum is 0, initialize it with the recorded burst of the first process
-    for (int i = 1; i < NUM_PRIORITY_LEVELS; i++) {
-        if (quantums[i] == 0) {
-            quantums[i] = process->burst_length * CONSTANTS[i];
-        } else {
-            // Initialize alpha with ALPHA_LOW
-            float alpha = ALPHA_LOW;
-            // Give a higher weight to the new recorded burst if it is higher than the current quantum
-            if (process->burst_length > quantums[i]) {
-                alpha = ALPHA_HIGH;
-            }
-            // Update quantum with the new recorded burst
-            quantums[i] = (1 - alpha) * quantums[i] + alpha * process->burst_length * CONSTANTS[i];
-        }
+void update_quantums(process_t *process) {
+    if (!process->found_burst) {
+        process->found_burst = 1;
+        quantum_average = (quantum_average * counter + process->burst_length) / (counter + 1);
+        counter++;
     }
-
-    // Reset the burst length of the process
-    process->burst_length = 0;
 }
 
 void *priority_monitor_thread(void *thread_data) {
@@ -111,16 +83,17 @@ void *priority_monitor_thread(void *thread_data) {
     ready_queue_t *ready_queue = ((struct queue_process_data *) thread_data)->ready_queue;
 
     // Store the initial priority level of the process
-    int initial_priority = process->priority_level;
+//    int initial_priority = process->priority_level;
 
     // Sleep for a while
     sleep(BOOST_TIME);
 
     // Check if the priority is still the same or decreased during the sleep
     pthread_mutex_lock(&process->mutex);
-    if (process->status != OS_RUN_DONE && process->priority_level >= initial_priority) {
+//    if (process->status != OS_RUN_DONE && process->priority_level >= initial_priority) {
+    if (process->status != OS_RUN_DONE) {
         // Increase priority back to what it was
-        process->priority_level = max(initial_priority, MAX_PRIORITY_LEVEL + 1);
+        process->priority_level = MAX_PRIORITY_LEVEL + 1;
 
         // Remove the process from the ready queue if it is there
         // If it is not in the queue, then the process will be added back to the ready queue
