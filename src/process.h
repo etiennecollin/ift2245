@@ -18,6 +18,7 @@ struct process {
     uint64_t burst_length;
     int priority_level;
     int status;
+    int found_burst;
     pthread_mutex_t mutex;
 };
 

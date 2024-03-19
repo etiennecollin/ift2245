@@ -12,27 +12,53 @@ void ready_queue_init(ready_queue_t *queue) {
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
         queue->head[i] = NULL;
         queue->tail[i] = NULL;
-        pthread_mutex_init(&queue->mutex[i], NULL);
         queue->size[i] = 0;
+        pthread_mutex_init(&queue->queue_mutex[i], NULL);
     }
-    pthread_mutex_init(&queue->global_mutex, NULL);
+    queue->quantum = INITIAL_QUANTUM;
+    queue->quantum_counter = 0;
+    pthread_mutex_init(&queue->useless_mutex, NULL);
     pthread_cond_init(&queue->cond, NULL);
 }
 
 void ready_queue_destroy(ready_queue_t *queue) {
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        pthread_mutex_lock(&queue->mutex[i]);
+        pthread_mutex_lock(&queue->queue_mutex[i]);
         node_t *current = queue->head[i];
         while (current != NULL) {
             node_t *next = current->next;
             free(current);
             current = next;
         }
-        pthread_mutex_unlock(&queue->mutex[i]);
-        pthread_mutex_destroy(&queue->mutex[i]);
+        pthread_mutex_unlock(&queue->queue_mutex[i]);
+        pthread_mutex_destroy(&queue->queue_mutex[i]);
     }
+    pthread_mutex_destroy(&queue->useless_mutex);
     pthread_cond_destroy(&queue->cond);
 }
+
+void remove_from_quantum(ready_queue_t *queue, process_t *process) {
+    if (process == NULL || !process->found_burst) {
+        return;
+    }
+
+    uint64_t quantum = queue->quantum;
+    int counter = queue->quantum_counter;
+    queue->quantum = (quantum * counter - process->burst_length) / (counter - 1);
+    queue->quantum_counter--;
+}
+
+void add_to_quantum(ready_queue_t *queue, process_t *process) {
+    if (process == NULL || process->found_burst) {
+        return;
+    }
+
+    uint64_t quantum = queue->quantum;
+    int counter = queue->quantum_counter;
+    queue->quantum = (quantum * counter + process->burst_length) / (counter + 1);
+    queue->quantum_counter++;
+}
+
 
 void ready_queue_push(ready_queue_t *queue, process_t *process) {
     int priority = DEFAULT_PRIORITY_LEVEL + 1;
@@ -41,7 +67,7 @@ void ready_queue_push(ready_queue_t *queue, process_t *process) {
     }
 
     // Lock the queue
-    pthread_mutex_lock(&queue->mutex[priority]);
+    pthread_mutex_lock(&queue->queue_mutex[priority]);
 
     // Allocate a new node
     node_t *new_node = malloc(sizeof(node_t));
@@ -62,7 +88,7 @@ void ready_queue_push(ready_queue_t *queue, process_t *process) {
     queue->size[priority]++;
 
     // Signal the condition variable and unlock the queue
-    pthread_mutex_unlock(&queue->mutex[priority]);
+    pthread_mutex_unlock(&queue->queue_mutex[priority]);
     pthread_cond_signal(&queue->cond);
 }
 
@@ -72,15 +98,15 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
     while (1) {
         for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
             if (queue->size[i] > 0) {
-                pthread_mutex_lock(&queue->mutex[i]);
+                pthread_mutex_lock(&queue->queue_mutex[i]);
                 priority = i;
                 break;
             }
         }
         if (priority == -1) {
-            pthread_mutex_lock(&queue->global_mutex);
-            pthread_cond_wait(&queue->cond, &queue->global_mutex);
-            pthread_mutex_unlock(&queue->global_mutex);
+            pthread_mutex_lock(&queue->useless_mutex);
+            pthread_cond_wait(&queue->cond, &queue->useless_mutex);
+            pthread_mutex_unlock(&queue->useless_mutex);
         } else {
             break;
         }
@@ -110,7 +136,7 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
     free(head);
 
     // Unlock the queue
-    pthread_mutex_unlock(&queue->mutex[priority]);
+    pthread_mutex_unlock(&queue->queue_mutex[priority]);
 
     // Return the process
     return process;
@@ -124,7 +150,7 @@ int ready_queue_remove(ready_queue_t *queue, process_t *process) {
     int priority = process->priority_level;
 
     // Lock the queue
-    pthread_mutex_lock(&queue->mutex[priority]);
+    pthread_mutex_lock(&queue->queue_mutex[priority]);
 
     // Traverse the queue to find and remove the process
     node_t *current = queue->head[priority];
@@ -163,7 +189,7 @@ int ready_queue_remove(ready_queue_t *queue, process_t *process) {
     }
 
     // Unlock the queue
-    pthread_mutex_unlock(&queue->mutex[priority]);
+    pthread_mutex_unlock(&queue->queue_mutex[priority]);
 
     return was_found;
 }
@@ -172,7 +198,7 @@ int ready_queue_remove(ready_queue_t *queue, process_t *process) {
 size_t ready_queue_size(ready_queue_t *queue) {
     // Lock all queues
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        pthread_mutex_lock(&queue->mutex[i]);
+        pthread_mutex_lock(&queue->queue_mutex[i]);
     }
 
     // Calculate the total size
@@ -183,7 +209,7 @@ size_t ready_queue_size(ready_queue_t *queue) {
 
     // Unlock all queues
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        pthread_mutex_unlock(&queue->mutex[i]);
+        pthread_mutex_unlock(&queue->queue_mutex[i]);
     }
     return size;
 }

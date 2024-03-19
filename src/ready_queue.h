@@ -6,17 +6,22 @@
 
 #include "process.h"
 
+#define INITIAL_QUANTUM 125
+
 typedef struct ready_queue ready_queue_t;
 typedef struct node node_t;
 
 struct ready_queue {
-    pthread_mutex_t mutex[NUM_PRIORITY_LEVELS];
     pthread_cond_t cond;
-    pthread_mutex_t global_mutex;
-    // TODO: Add fields here
+    pthread_mutex_t useless_mutex;
+
+    pthread_mutex_t queue_mutex[NUM_PRIORITY_LEVELS];
     node_t *head[NUM_PRIORITY_LEVELS];
     node_t *tail[NUM_PRIORITY_LEVELS];
     size_t size[NUM_PRIORITY_LEVELS];
+
+    uint64_t quantum;
+    int quantum_counter;
 };
 
 struct node {
@@ -78,6 +83,7 @@ process_t *ready_queue_pop(ready_queue_t *queue);
  * @return 0 if the process was removed, 1 otherwise
  */
 int ready_queue_remove(ready_queue_t *queue, process_t *process);
+
 /**
  * Cette fonction retourne la taille de la file d'attente.
  *
@@ -87,5 +93,9 @@ int ready_queue_remove(ready_queue_t *queue, process_t *process);
  */
 size_t ready_queue_size(ready_queue_t *queue);
 
+
+void add_to_quantum(ready_queue_t *queue, process_t *process);
+
+void remove_from_quantum(ready_queue_t *queue, process_t *process);
 
 #endif
