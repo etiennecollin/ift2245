@@ -16,9 +16,12 @@ struct process {
 
     // TODO: add more fields here if needed
     uint64_t burst_length;
+    uint64_t io_length;
     int priority_level;
     int status;
     int found_burst;
+    int found_io;
+    int already_executed;
     pthread_mutex_t mutex;
 };
 

@@ -79,12 +79,52 @@ void ready_queue_push(ready_queue_t *queue, process_t *process) {
     // Initialize the new node
     new_node->process = process;
     new_node->next = NULL;
-    if (queue->tail[priority] != NULL) {
-        queue->tail[priority]->next = new_node;
-    } else {
+    new_node->prev = NULL;
+    if (process == NULL || priority == MAX_PRIORITY_LEVEL) {
+        if (queue->tail[priority] != NULL) {
+            new_node->next = queue->tail[priority];
+            queue->tail[priority]->prev = new_node;
+        } else {
+            queue->head[priority] = new_node;
+        }
+        queue->tail[priority] = new_node;
+    } else if (process->already_executed) {
+        // Add process to head
+        if (queue->head[priority] != NULL) {
+            queue->head[priority]->next = new_node;
+            new_node->prev = queue->head[priority];
+        } else {
+            queue->tail[priority] = new_node;
+        }
         queue->head[priority] = new_node;
+    } else {
+        // Add the process to the right position based on its burst length + io length
+        // Find the right position
+        node_t *prev = NULL;
+        node_t *current = queue->tail[priority];
+        while (current != NULL) {
+            if (current->process->burst_length + current->process->io_length <
+                process->burst_length + process->io_length) {
+                break;
+            }
+            prev = current;
+            current = current->next;
+        }
+
+        // Link the neighbors of the new node
+        new_node->next = current;
+        new_node->prev = prev;
+        if (prev != NULL) {
+            prev->next = new_node;
+        } else {
+            queue->tail[priority] = new_node;
+        }
+        if (current != NULL) {
+            current->prev = new_node;
+        } else {
+            queue->head[priority] = new_node;
+        }
     }
-    queue->tail[priority] = new_node;
     queue->size[priority]++;
 
     // Signal the condition variable and unlock the queue
@@ -99,8 +139,12 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
         for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
             if (queue->size[i] > 0) {
                 pthread_mutex_lock(&queue->queue_mutex[i]);
-                priority = i;
-                break;
+                if (queue->size[i] > 0) {
+                    priority = i;
+                    break;
+                } else {
+                    pthread_mutex_unlock(&queue->queue_mutex[i]);
+                }
             }
         }
         if (priority == -1) {
@@ -112,11 +156,11 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
         }
     }
 
-    // Save the process of the node
-    node_t *head = queue->head[priority];
-
     // Decrement the size of the queue
     queue->size[priority]--;
+
+    // Save the process of the node
+    node_t *head = queue->head[priority];
 
     // Verify if the head is null
     if (head == NULL) {
@@ -127,9 +171,11 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
     process_t *process = head->process;
 
     // Update the queue's head and tail
-    queue->head[priority] = head->next;
+    queue->head[priority] = queue->head[priority]->prev;
     if (queue->head[priority] == NULL) {
         queue->tail[priority] = NULL;
+    } else {
+        queue->head[priority]->next = NULL;
     }
 
     // Free the node
@@ -153,31 +199,22 @@ int ready_queue_remove(ready_queue_t *queue, process_t *process) {
     pthread_mutex_lock(&queue->queue_mutex[priority]);
 
     // Traverse the queue to find and remove the process
-    node_t *current = queue->head[priority];
     node_t *prev = NULL;
+    node_t *current = queue->tail[priority];
     int was_found = 0;
     while (current != NULL) {
         if (current->process == process) {
             was_found = 1;
-            // Process is at the head of the queue
             if (prev == NULL) {
-                // Update the head of the queue
-                queue->head[priority] = current->next;
-
-                // If process is the only one in the queue
-                // update the tail of the queue
-                if (queue->tail[priority] == current) {
-                    queue->tail[priority] = NULL;
-                }
+                queue->tail[priority] = current->next;
             } else {
-                // Update the next of the previous node
                 prev->next = current->next;
+            }
 
-                // If process is at the tail of the queue
-                // update the tail of the queue
-                if (queue->tail[priority] == current) {
-                    queue->tail[priority] = prev;
-                }
+            if (current->next == NULL) {
+                queue->head[priority] = current->prev;
+            } else {
+                current->next->prev = prev;
             }
             // Free the node and decrement the size
             free(current);

@@ -16,13 +16,14 @@ const int BOOST_TIME = 3;
 // The higher the priority level, the lower the constant factor
 // The order of the constants is goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
-const float CONSTANTS[] = {0, 0.7, 0.9, 1.0};
+const float CONSTANTS[] = {0, 0.5, 0.7, 1.0};
 
 void *worker_run(void *user_data) {
     worker_t *worker = (worker_t *) user_data;
     ready_queue_t *ready_queue = worker->ready_queue;
 
     process_t *process = NULL;
+    uint64_t start_time;
     uint64_t quantum;
     while (1) {
         // Pop a process from the ready queue
@@ -34,18 +35,40 @@ void *worker_run(void *user_data) {
         // Get the quantum for the current priority level
         quantum = get_quantum(ready_queue, process->priority_level);
 
-        // Set the arrival time of the process
-        uint64_t start_time = os_time();
-
         // Run the process
         pthread_mutex_lock(&process->mutex);
-        process->status = os_run_process(process, worker->core, quantum);
-        pthread_mutex_unlock(&process->mutex);
+        if (process->priority_level != MAX_PRIORITY_LEVEL) {
+            uint64_t quantum_spent = 0;
+            uint64_t micro_quantum = min(100, quantum);
+            while (1) {
+                // Set the arrival time of the process
+                start_time = os_time();
 
-        // Update the burst length of the process
-        if (!process->found_burst) {
-            process->burst_length += os_time() - start_time;
+                // Run the process for a micro quantum
+                process->status = os_run_process(process, worker->core, micro_quantum);
+
+                // Update the burst length of the process
+                if (!process->found_burst) {
+                    process->burst_length += os_time() - start_time;
+                }
+
+                quantum_spent += micro_quantum;
+
+                // Check if the process should be preempted
+                pthread_mutex_lock(&ready_queue->queue_mutex[process->priority_level]);
+                if (ready_queue->size[MAX_PRIORITY_LEVEL] > 0
+                    || process->status == OS_RUN_BLOCKED
+                    || process->status == OS_RUN_DONE
+                    || quantum_spent >= quantum) {
+                    pthread_mutex_unlock(&ready_queue->queue_mutex[process->priority_level]);
+                    break;
+                }
+                pthread_mutex_unlock(&ready_queue->queue_mutex[process->priority_level]);
+            }
+        } else {
+            process->status = os_run_process(process, worker->core, quantum);
         }
+        pthread_mutex_unlock(&process->mutex);
 
         // Adjust priority level based on process behavior
         update_priority_level(process, ready_queue);
@@ -59,7 +82,15 @@ void *worker_run(void *user_data) {
             case OS_RUN_BLOCKED:
                 add_to_quantum(ready_queue, process);
                 process->found_burst = 1;
+
+                start_time = os_time();
                 os_start_io(process);
+
+                // Update the io length of the process
+                if (!process->found_io) {
+                    process->io_length = os_time() - start_time;
+                    process->found_burst = 1;
+                }
                 break;
             case OS_RUN_DONE:
                 remove_from_quantum(ready_queue, process);

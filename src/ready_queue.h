@@ -27,6 +27,7 @@ struct ready_queue {
 struct node {
     process_t *process;
     struct node *next;
+    struct node *prev;
 };
 
 /**
