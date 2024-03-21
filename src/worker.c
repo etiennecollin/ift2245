@@ -16,7 +16,7 @@ const int BOOST_TIME = 3;
 // The higher the priority level, the lower the constant factor
 // The order of the constants is goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
-const float CONSTANTS[] = {0, 0.5, 0.7, 1.0};
+const float CONSTANTS[] = {0, 0.3, 0.5, 0.9};
 
 void *worker_run(void *user_data) {
     worker_t *worker = (worker_t *) user_data;
@@ -38,35 +38,35 @@ void *worker_run(void *user_data) {
         // Run the process
         pthread_mutex_lock(&process->mutex);
         if (process->priority_level != MAX_PRIORITY_LEVEL) {
-            uint64_t quantum_spent = 0;
-            uint64_t micro_quantum = min(100, quantum);
-            while (1) {
+            uint64_t micro_quantum = min(120, quantum);
+            for (uint64_t i = 0; i < quantum; i += micro_quantum) {
                 // Set the arrival time of the process
                 start_time = os_time();
-
                 // Run the process for a micro quantum
                 process->status = os_run_process(process, worker->core, micro_quantum);
-
                 // Update the burst length of the process
                 if (!process->found_burst) {
                     process->burst_length += os_time() - start_time;
                 }
 
-                quantum_spent += micro_quantum;
-
                 // Check if the process should be preempted
-                pthread_mutex_lock(&ready_queue->queue_mutex[process->priority_level]);
+                pthread_mutex_lock(&ready_queue->max_priority_mutex);
                 if (ready_queue->size[MAX_PRIORITY_LEVEL] > 0
                     || process->status == OS_RUN_BLOCKED
-                    || process->status == OS_RUN_DONE
-                    || quantum_spent >= quantum) {
-                    pthread_mutex_unlock(&ready_queue->queue_mutex[process->priority_level]);
+                    || process->status == OS_RUN_DONE) {
+                    pthread_mutex_unlock(&ready_queue->max_priority_mutex);
                     break;
                 }
-                pthread_mutex_unlock(&ready_queue->queue_mutex[process->priority_level]);
+                pthread_mutex_unlock(&ready_queue->max_priority_mutex);
             }
         } else {
+            // Set the arrival time of the process
+            start_time = os_time();
             process->status = os_run_process(process, worker->core, quantum);
+            // Update the burst length of the process
+            if (!process->found_burst) {
+                process->burst_length += os_time() - start_time;
+            }
         }
         pthread_mutex_unlock(&process->mutex);
 

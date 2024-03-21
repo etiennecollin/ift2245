@@ -18,6 +18,7 @@ void ready_queue_init(ready_queue_t *queue) {
     queue->quantum = INITIAL_QUANTUM;
     queue->quantum_counter = 0;
     pthread_mutex_init(&queue->useless_mutex, NULL);
+    pthread_mutex_init(&queue->max_priority_mutex, NULL);
     pthread_cond_init(&queue->cond, NULL);
 }
 
@@ -34,6 +35,7 @@ void ready_queue_destroy(ready_queue_t *queue) {
         pthread_mutex_destroy(&queue->queue_mutex[i]);
     }
     pthread_mutex_destroy(&queue->useless_mutex);
+    pthread_mutex_destroy(&queue->max_priority_mutex);
     pthread_cond_destroy(&queue->cond);
 }
 
