@@ -16,7 +16,7 @@ struct ready_queue {
     pthread_mutex_t useless_mutex;
 
     pthread_mutex_t queue_mutex[NUM_PRIORITY_LEVELS];
-    pthread_mutex_t max_priority_mutex;
+    pthread_mutex_t read_max_queue_mutex;
     node_t *head[NUM_PRIORITY_LEVELS];
     node_t *tail[NUM_PRIORITY_LEVELS];
     size_t size[NUM_PRIORITY_LEVELS];

@@ -50,14 +50,14 @@ void *worker_run(void *user_data) {
                 }
 
                 // Check if the process should be preempted
-                pthread_mutex_lock(&ready_queue->max_priority_mutex);
+                pthread_mutex_lock(&ready_queue->read_max_queue_mutex);
                 if (ready_queue->size[MAX_PRIORITY_LEVEL] > 0
                     || process->status == OS_RUN_BLOCKED
                     || process->status == OS_RUN_DONE) {
-                    pthread_mutex_unlock(&ready_queue->max_priority_mutex);
+                    pthread_mutex_unlock(&ready_queue->read_max_queue_mutex);
                     break;
                 }
-                pthread_mutex_unlock(&ready_queue->max_priority_mutex);
+                pthread_mutex_unlock(&ready_queue->read_max_queue_mutex);
             }
         } else {
             // Set the arrival time of the process
