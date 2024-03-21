@@ -128,7 +128,11 @@ void *priority_monitor_thread(void *thread_data) {
     pthread_mutex_lock(&process->mutex);
     if (process->status != OS_RUN_DONE) {
         // Increase priority back to what it was
-        process->priority_level = MAX_PRIORITY_LEVEL + 1;
+        if (process->status == OS_RUN_BLOCKED) {
+            process->priority_level = MAX_PRIORITY_LEVEL;
+        } else {
+            process->priority_level = MAX_PRIORITY_LEVEL + 1;
+        }
 
         // Remove the process from the ready queue if it is there
         // If it is not in the queue, then the process will be added back to the ready queue
@@ -168,17 +172,13 @@ void update_priority_level(process_t *process, ready_queue_t *ready_queue) {
             break;
         case OS_RUN_BLOCKED:
             // Process was blocked, promote priority level
-            if (NUM_PRIORITY_LEVELS > 2) {
-                pthread_mutex_lock(&process->mutex);
-                process->priority_level = max(process->priority_level - 1, MAX_PRIORITY_LEVEL + 1);
-                pthread_mutex_unlock(&process->mutex);
-            }
+            process->priority_level = MAX_PRIORITY_LEVEL;
             break;
         case OS_RUN_DONE:
             // Process is done, reset priority level
-            pthread_mutex_lock(&process->mutex);
-            process->priority_level = MIN_PRIORITY_LEVEL;
-            pthread_mutex_unlock(&process->mutex);
+//            pthread_mutex_lock(&process->mutex);
+//            process->priority_level = MAX_PRIORITY_LEVEL;
+//            pthread_mutex_unlock(&process->mutex);
             break;
 
     }
