@@ -28,11 +28,11 @@ void worker_destroy(worker_t *worker);
 
 void worker_join(worker_t *worker);
 
-// Update quantum with a dynamic leaky filter average given the recorded burst of a process
-void update_quantums(process_t *process, uint64_t *quantum);
-
 // Update the priority level of a process based on its status
 void update_priority_level(process_t *process, ready_queue_t *ready_queue);
+
+// Return the quantum for a given priority level
+uint64_t get_quantum(ready_queue_t *queue, int priority);
 
 // Return the minimum of two integers
 int min(int a, int b);

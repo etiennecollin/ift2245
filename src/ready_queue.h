@@ -8,20 +8,33 @@
 
 typedef struct ready_queue ready_queue_t;
 typedef struct node node_t;
+typedef struct remove_parallel_data remove_parallel_data_t;
 
 struct ready_queue {
-    pthread_mutex_t mutex[NUM_PRIORITY_LEVELS];
     pthread_cond_t cond;
-    pthread_mutex_t global_mutex;
-    // TODO: Add fields here
+    pthread_mutex_t useless_mutex;
+
+    pthread_mutex_t queue_mutex[NUM_PRIORITY_LEVELS];
+    pthread_mutex_t read_max_queue_mutex;
+    pthread_mutex_t quantum_mutex;
     node_t *head[NUM_PRIORITY_LEVELS];
     node_t *tail[NUM_PRIORITY_LEVELS];
     size_t size[NUM_PRIORITY_LEVELS];
+
+    uint64_t quantum;
+    int quantum_counter;
 };
 
 struct node {
     process_t *process;
     struct node *next;
+    struct node *prev;
+};
+
+struct remove_parallel_data {
+    process_t *process;
+    ready_queue_t *queue;
+    int stop;
 };
 
 /**
@@ -74,8 +87,11 @@ process_t *ready_queue_pop(ready_queue_t *queue);
  *
  * @param queue the ready queue
  * @param process the removed process
+ *
+ * @return 0 if the process was removed, 1 otherwise
  */
-void ready_queue_remove(ready_queue_t *queue, process_t *process);
+int ready_queue_remove(ready_queue_t *queue, process_t *process);
+
 /**
  * Cette fonction retourne la taille de la file d'attente.
  *
@@ -85,5 +101,15 @@ void ready_queue_remove(ready_queue_t *queue, process_t *process);
  */
 size_t ready_queue_size(ready_queue_t *queue);
 
+
+void add_to_quantum_average(ready_queue_t *queue, process_t *process);
+
+void remove_from_quantum_average(ready_queue_t *queue, process_t *process);
+
+int ready_queue_remove_par(ready_queue_t *queue, process_t *process);
+
+void *remove_right_thread(void *thread_data);
+
+void *remove_left_thread(void *thread_data);
 
 #endif

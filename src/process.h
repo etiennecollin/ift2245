@@ -1,10 +1,13 @@
 #ifndef TP2_PROCESS_H
 #define TP2_PROCESS_H
 
-#define NUM_PRIORITY_LEVELS 3
+#define NUM_PRIORITY_LEVELS 4
 #define MAX_PRIORITY_LEVEL 0
 #define MIN_PRIORITY_LEVEL (NUM_PRIORITY_LEVELS - 1)
 #define DEFAULT_PRIORITY_LEVEL MAX_PRIORITY_LEVEL
+
+#define INITIAL_QUANTUM 500
+#define MAX_PRIORITY_LEVEL_QUANTUM 1
 
 #include <stdint.h>
 #include <pthread.h>
@@ -16,8 +19,13 @@ struct process {
 
     // TODO: add more fields here if needed
     uint64_t burst_length;
+    uint64_t io_length;
     int priority_level;
     int status;
+    int found_burst;
+    int found_io;
+    int already_executed;
+    int waiting_boost;
     pthread_mutex_t mutex;
 };
 
