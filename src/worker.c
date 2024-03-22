@@ -144,20 +144,26 @@ void *priority_monitor_thread(void *thread_data) {
     // Check if the priority is still the same or decreased during the sleep
     pthread_mutex_lock(&process->mutex);
     if (process->status != OS_RUN_DONE) {
-        // Increase priority to the MAX_PRIORITY_LEVEL or MAX_PRIORITY_LEVEL + 1
+        // By default, the new level is the maximum priority level + 1
+        int new_level = MAX_PRIORITY_LEVEL + 1;
+
+        // If the process is blocked, then the new level is the maximum priority level
         if (process->status == OS_RUN_BLOCKED) {
-            process->priority_level = MAX_PRIORITY_LEVEL;
-        } else {
-            process->priority_level = MAX_PRIORITY_LEVEL + 1;
+            new_level = MAX_PRIORITY_LEVEL;
         }
 
-        // Remove the process from the ready queue if it is there and push it back to give it the right queue.
-        // If it is not in the queue, then the process will be automatically added back to the ready queue
-        // by the worker or the OS.
-        int was_removed = ready_queue_remove(ready_queue, process);
-        if (was_removed) {
-            // Add the process to the right priority level ready queue
-            ready_queue_push(ready_queue, process);
+        // Check if the priority level of the process is higher than the new level
+        if (process->priority_level > new_level) {
+            process->priority_level = new_level;
+
+            // Remove the process from the ready queue if it is there and push it back to give it the right queue.
+            // If it is not in the queue, then the process will be automatically added back to the ready queue
+            // by the worker or the OS.
+            int was_removed = ready_queue_remove(ready_queue, process);
+            if (was_removed) {
+                // Add the process to the right priority level ready queue
+                ready_queue_push(ready_queue, process);
+            }
         }
     }
     process->waiting_boost = 0;
