@@ -109,6 +109,8 @@ void add_to_quantum_average(ready_queue_t *queue, process_t *process);
 
 void remove_from_quantum_average(ready_queue_t *queue, process_t *process);
 
+int ready_queue_remove_par(ready_queue_t *queue, process_t *process);
+
 void *remove_right_thread(void *thread_data);
 
 void *remove_left_thread(void *thread_data);

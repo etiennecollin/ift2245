@@ -198,8 +198,50 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
     return process;
 }
 
-
 int ready_queue_remove(ready_queue_t *queue, process_t *process) {
+    if (process == NULL)
+        return 0;
+
+    int priority = process->priority_level;
+
+    // Lock the queue
+    pthread_mutex_lock(&queue->queue_mutex[priority]);
+
+    // Traverse the queue to find and remove the process
+    node_t *prev = NULL;
+    node_t *current = queue->tail[priority];
+    int was_found = 0;
+    while (current != NULL) {
+        if (current->process == process) {
+            was_found = 1;
+            if (prev == NULL) {
+                queue->tail[priority] = current->next;
+            } else {
+                prev->next = current->next;
+            }
+
+            if (current->next == NULL) {
+                queue->head[priority] = current->prev;
+            } else {
+                current->next->prev = prev;
+            }
+            // Free the node and decrement the size
+            free(current);
+            queue->size[priority]--;
+            break;
+        }
+        prev = current;
+        current = current->next;
+    }
+
+    // Unlock the queue
+    pthread_mutex_unlock(&queue->queue_mutex[priority]);
+
+    return was_found;
+}
+
+
+int ready_queue_remove_par(ready_queue_t *queue, process_t *process) {
     if (process == NULL)
         return 0;
 
