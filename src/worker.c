@@ -17,6 +17,7 @@ const int BOOST_TIME = 3;
 // The order of the constants is goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
 const float CONSTANTS[] = {0, 0.3, 0.5, 0.8};
+const int MICRO_QUANTUM_MAX = 120;
 
 void *worker_run(void *user_data) {
     worker_t *worker = (worker_t *) user_data;
@@ -38,7 +39,7 @@ void *worker_run(void *user_data) {
         // Run the process
         pthread_mutex_lock(&process->mutex);
         if (process->priority_level != MAX_PRIORITY_LEVEL) {
-            uint64_t micro_quantum = min(120, quantum);
+            uint64_t micro_quantum = min(MICRO_QUANTUM_MAX, quantum);
             for (uint64_t i = 0; i < quantum; i += micro_quantum) {
                 // Set the arrival time of the process
                 if (!process->found_burst) {
