@@ -115,6 +115,7 @@ void *worker_run(void *user_data) {
         }
         pthread_mutex_unlock(&process->mutex);
     }
+
     return NULL;
 }
 
@@ -158,6 +159,7 @@ void *priority_monitor_thread(void *thread_data) {
             ready_queue_push(ready_queue, process);
         }
     }
+    process->waiting_boost = 0;
     pthread_mutex_unlock(&process->mutex);
 
     free(thread_data);
@@ -170,9 +172,10 @@ void update_priority_level(process_t *process, ready_queue_t *ready_queue) {
             // Process was preempted, demote priority level
             pthread_mutex_lock(&process->mutex);
             process->priority_level = min(process->priority_level + 1, MIN_PRIORITY_LEVEL);
-            pthread_mutex_unlock(&process->mutex);
 
-            if (BOOST_TIME != 0 && NUM_PRIORITY_LEVELS > 2) {
+            if (BOOST_TIME != 0 && NUM_PRIORITY_LEVELS > 2 && !process->waiting_boost) {
+                process->waiting_boost = 1;
+
                 // Create an instance of the structure and populate it with process and ready_queue data
                 // Allocate memory for the struct
                 queue_process_data_t *data = malloc(sizeof(queue_process_data_t));
@@ -184,10 +187,13 @@ void update_priority_level(process_t *process, ready_queue_t *ready_queue) {
                 pthread_create(&monitor_thread, NULL, priority_monitor_thread, data);
                 pthread_detach(monitor_thread);  // Detach the thread to avoid memory leak
             }
+            pthread_mutex_unlock(&process->mutex);
             break;
         case OS_RUN_BLOCKED:
             // Process was blocked, promote priority level
+            pthread_mutex_lock(&process->mutex);
             process->priority_level = MAX_PRIORITY_LEVEL;
+            pthread_mutex_unlock(&process->mutex);
             break;
         case OS_RUN_DONE:
             // Process is done, reset priority level

@@ -22,6 +22,7 @@ struct process {
     int found_burst;
     int found_io;
     int already_executed;
+    int waiting_boost;
     pthread_mutex_t mutex;
 };
 

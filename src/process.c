@@ -22,6 +22,7 @@ process_t *create_process(int pid) {
     process->found_burst = 0;
     process->found_io = 0;
     process->already_executed = 0;
+    process->waiting_boost = 0;
     pthread_mutex_init(&process->mutex, NULL);
     return process;
 }
