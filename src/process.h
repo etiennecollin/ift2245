@@ -6,6 +6,9 @@
 #define MIN_PRIORITY_LEVEL (NUM_PRIORITY_LEVELS - 1)
 #define DEFAULT_PRIORITY_LEVEL MAX_PRIORITY_LEVEL
 
+#define INITIAL_QUANTUM 500
+#define MAX_PRIORITY_LEVEL_QUANTUM 1
+
 #include <stdint.h>
 #include <pthread.h>
 

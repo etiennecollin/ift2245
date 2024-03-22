@@ -9,15 +9,16 @@
 #include <unistd.h>  // For sleep function
 
 // Time in seconds to wait before checking if the priority level of a process needs to be increased
-const int BOOST_TIME = 3;
+#define BOOST_TIME 3
 
+// Maximum value of the "micro quantum"
+#define MICRO_QUANTUM_MAX 120
 
-// Constant factor multiplying the new recorded burst
+// Constant factor multiplying the average quantum of the queue
 // The higher the priority level, the lower the constant factor
-// The order of the constants is goes from the highest priority level to the lowest
+// The order of the constants goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
-const float CONSTANTS[] = {0, 0.3, 0.5, 0.8};
-const int MICRO_QUANTUM_MAX = 120;
+const float CONSTANTS[] = {0, 0.3, 0.5, 0.85};
 
 void *worker_run(void *user_data) {
     worker_t *worker = (worker_t *) user_data;
@@ -39,6 +40,10 @@ void *worker_run(void *user_data) {
         // Run the process
         pthread_mutex_lock(&process->mutex);
         if (process->priority_level != MAX_PRIORITY_LEVEL) {
+            // Run the process, but split the quantum into micro quantums
+            // to check if the process should be preempted by a higher priority process.
+            // This works because the OS does not impose a context switch delay
+            // if a process that is run is the same as the one that was previously run.
             uint64_t micro_quantum = min(MICRO_QUANTUM_MAX, quantum);
             for (uint64_t i = 0; i < quantum; i += micro_quantum) {
                 // Set the arrival time of the process
@@ -204,9 +209,9 @@ void update_priority_level(process_t *process, ready_queue_t *ready_queue) {
             break;
         case OS_RUN_DONE:
             // Process is done, reset priority level
-//            pthread_mutex_lock(&process->mutex);
-//            process->priority_level = MAX_PRIORITY_LEVEL;
-//            pthread_mutex_unlock(&process->mutex);
+            pthread_mutex_lock(&process->mutex);
+            process->priority_level = MAX_PRIORITY_LEVEL;
+            pthread_mutex_unlock(&process->mutex);
             break;
 
     }

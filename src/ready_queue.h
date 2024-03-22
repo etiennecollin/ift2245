@@ -6,9 +6,6 @@
 
 #include "process.h"
 
-#define INITIAL_QUANTUM 125
-#define MAX_PRIORITY_LEVEL_QUANTUM 1
-
 typedef struct ready_queue ready_queue_t;
 typedef struct node node_t;
 typedef struct remove_parallel_data remove_parallel_data_t;
