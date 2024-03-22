@@ -18,18 +18,27 @@
 // The higher the priority level, the lower the constant factor
 // The order of the constants goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
-const float CONSTANTS[] = {0, 0.3, 0.5, 0.85};
+const float CONSTANTS[] = {0, 0.3, 0.5, 0.8};
 
 void *worker_run(void *user_data) {
     worker_t *worker = (worker_t *) user_data;
     ready_queue_t *ready_queue = worker->ready_queue;
 
+    int mutex_status = -1;
     process_t *process = NULL;
     uint64_t start_time;
     uint64_t quantum;
     while (1) {
         // Pop a process from the ready queue
         process = ready_queue_pop(ready_queue);
+
+        // This mutex makes sure that only one worker can preempt
+        // between micro quantums and get the new max priority
+        // level process.
+        if (mutex_status == 0) {
+            pthread_mutex_unlock(&ready_queue->read_max_queue_mutex);
+            mutex_status = -1;
+        }
 
         // No more processes (poison pill)
         if (process == NULL) break;
@@ -59,15 +68,32 @@ void *worker_run(void *user_data) {
                     process->burst_length += os_time() - start_time;
                 }
 
-                // Check if the process should be preempted
-                pthread_mutex_lock(&ready_queue->read_max_queue_mutex);
-                if (ready_queue->size[MAX_PRIORITY_LEVEL] > 0
-                    || process->status == OS_RUN_BLOCKED
-                    || process->status == OS_RUN_DONE) {
-                    pthread_mutex_unlock(&ready_queue->read_max_queue_mutex);
+                // Check if the process should be preempted.
+                mutex_status = pthread_mutex_trylock(&ready_queue->read_max_queue_mutex);
+                if (mutex_status == 0) {
+                    if (ready_queue->size[MAX_PRIORITY_LEVEL] == 1) {
+                        // Only one process in the max priority level queue
+                        // Therefore, preempt the current process and do not
+                        // allow other workers to try to steal it by preempting.
+                        break;
+                    } else if (ready_queue->size[MAX_PRIORITY_LEVEL] > 1) {
+                        // More than one process in the max priority level queue
+                        // Therefore, preempt the current process and allow
+                        // the other workers to try to preempt.
+                        pthread_mutex_unlock(&ready_queue->read_max_queue_mutex);
+                        mutex_status = -1;
+                        break;
+                    } else {
+                        // No process in the max priority level queue
+                        pthread_mutex_unlock(&ready_queue->read_max_queue_mutex);
+                        mutex_status = -1;
+                    }
+                }
+
+                // In any case, the loop will break if the process is blocked or done.
+                if (process->status == OS_RUN_BLOCKED || process->status == OS_RUN_DONE) {
                     break;
                 }
-                pthread_mutex_unlock(&ready_queue->read_max_queue_mutex);
             }
         } else {
             // Set the arrival time of the process
