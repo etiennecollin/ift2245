@@ -41,9 +41,13 @@ void *worker_run(void *user_data) {
             uint64_t micro_quantum = min(120, quantum);
             for (uint64_t i = 0; i < quantum; i += micro_quantum) {
                 // Set the arrival time of the process
-                start_time = os_time();
+                if (!process->found_burst) {
+                    start_time = os_time();
+                }
+
                 // Run the process for a micro quantum
                 process->status = os_run_process(process, worker->core, micro_quantum);
+
                 // Update the burst length of the process
                 if (!process->found_burst) {
                     process->burst_length += os_time() - start_time;
@@ -61,8 +65,13 @@ void *worker_run(void *user_data) {
             }
         } else {
             // Set the arrival time of the process
-            start_time = os_time();
+            if (!process->found_burst) {
+                start_time = os_time();
+            }
+
+            // Run the process for the quantum
             process->status = os_run_process(process, worker->core, quantum);
+
             // Update the burst length of the process
             if (!process->found_burst) {
                 process->burst_length += os_time() - start_time;
@@ -80,20 +89,26 @@ void *worker_run(void *user_data) {
                 ready_queue_push(ready_queue, process);
                 break;
             case OS_RUN_BLOCKED:
-                add_to_quantum(ready_queue, process);
+                // Include the process in the quantum average
+                add_to_quantum_average(ready_queue, process);
                 process->found_burst = 1;
 
-                start_time = os_time();
+                // Update the io length of the process
+                if (!process->found_io) {
+                    start_time = os_time();
+                }
+
+                // Start the IO of the process
                 os_start_io(process);
 
-                // Update the io length of the process
+                // Update the IO length of the process
                 if (!process->found_io) {
                     process->io_length = os_time() - start_time;
                     process->found_burst = 1;
                 }
                 break;
             case OS_RUN_DONE:
-                remove_from_quantum(ready_queue, process);
+                remove_from_quantum_average(ready_queue, process);
                 process->found_burst = 0;
                 process->burst_length = 0;
                 break;
@@ -105,7 +120,7 @@ void *worker_run(void *user_data) {
 
 uint64_t get_quantum(ready_queue_t *queue, int priority) {
     if (priority == MAX_PRIORITY_LEVEL) {
-        return 1;
+        return MAX_PRIORITY_LEVEL_QUANTUM;
     }
 
     int quantum = queue->quantum * CONSTANTS[priority];
@@ -127,16 +142,16 @@ void *priority_monitor_thread(void *thread_data) {
     // Check if the priority is still the same or decreased during the sleep
     pthread_mutex_lock(&process->mutex);
     if (process->status != OS_RUN_DONE) {
-        // Increase priority back to what it was
+        // Increase priority to the MAX_PRIORITY_LEVEL or MAX_PRIORITY_LEVEL + 1
         if (process->status == OS_RUN_BLOCKED) {
             process->priority_level = MAX_PRIORITY_LEVEL;
         } else {
             process->priority_level = MAX_PRIORITY_LEVEL + 1;
         }
 
-        // Remove the process from the ready queue if it is there
-        // If it is not in the queue, then the process will be added back to the ready queue
-        // by the worker or OS automatically.
+        // Remove the process from the ready queue if it is there and push it back to give it the right queue.
+        // If it is not in the queue, then the process will be automatically added back to the ready queue
+        // by the worker or the OS.
         int was_removed = ready_queue_remove(ready_queue, process);
         if (was_removed) {
             // Add the process to the right priority level ready queue

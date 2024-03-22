@@ -18,6 +18,7 @@ void ready_queue_init(ready_queue_t *queue) {
     queue->quantum = INITIAL_QUANTUM;
     queue->quantum_counter = 0;
     pthread_mutex_init(&queue->useless_mutex, NULL);
+    pthread_mutex_init(&queue->quantum_mutex, NULL);
     pthread_mutex_init(&queue->read_max_queue_mutex, NULL);
     pthread_cond_init(&queue->cond, NULL);
 }
@@ -35,30 +36,35 @@ void ready_queue_destroy(ready_queue_t *queue) {
         pthread_mutex_destroy(&queue->queue_mutex[i]);
     }
     pthread_mutex_destroy(&queue->useless_mutex);
+    pthread_mutex_destroy(&queue->quantum_mutex);
     pthread_mutex_destroy(&queue->read_max_queue_mutex);
     pthread_cond_destroy(&queue->cond);
 }
 
-void remove_from_quantum(ready_queue_t *queue, process_t *process) {
+void remove_from_quantum_average(ready_queue_t *queue, process_t *process) {
     if (process == NULL || !process->found_burst) {
         return;
     }
 
+    pthread_mutex_lock(&queue->quantum_mutex);
     uint64_t quantum = queue->quantum;
     int counter = queue->quantum_counter;
     queue->quantum = (quantum * counter - process->burst_length) / (counter - 1);
     queue->quantum_counter--;
+    pthread_mutex_unlock(&queue->quantum_mutex);
 }
 
-void add_to_quantum(ready_queue_t *queue, process_t *process) {
+void add_to_quantum_average(ready_queue_t *queue, process_t *process) {
     if (process == NULL || process->found_burst) {
         return;
     }
 
+    pthread_mutex_lock(&queue->quantum_mutex);
     uint64_t quantum = queue->quantum;
     int counter = queue->quantum_counter;
     queue->quantum = (quantum * counter + process->burst_length) / (counter + 1);
     queue->quantum_counter++;
+    pthread_mutex_unlock(&queue->quantum_mutex);
 }
 
 
@@ -68,15 +74,15 @@ void ready_queue_push(ready_queue_t *queue, process_t *process) {
         priority = process->priority_level;
     }
 
-    // Lock the queue
-    pthread_mutex_lock(&queue->queue_mutex[priority]);
-
     // Allocate a new node
     node_t *new_node = malloc(sizeof(node_t));
     if (new_node == NULL) {
         perror("malloc");
         exit(EXIT_FAILURE);
     }
+
+    // Lock the queue
+    pthread_mutex_lock(&queue->queue_mutex[priority]);
 
     // Initialize the new node
     new_node->process = process;
@@ -146,6 +152,7 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
                     break;
                 } else {
                     pthread_mutex_unlock(&queue->queue_mutex[i]);
+                    continue;
                 }
             }
         }
@@ -180,11 +187,11 @@ process_t *ready_queue_pop(ready_queue_t *queue) {
         queue->head[priority]->next = NULL;
     }
 
-    // Free the node
-    free(head);
-
     // Unlock the queue
     pthread_mutex_unlock(&queue->queue_mutex[priority]);
+
+    // Free the node
+    free(head);
 
     // Return the process
     return process;
@@ -235,20 +242,14 @@ int ready_queue_remove(ready_queue_t *queue, process_t *process) {
 
 
 size_t ready_queue_size(ready_queue_t *queue) {
-    // Lock all queues
-    for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        pthread_mutex_lock(&queue->queue_mutex[i]);
-    }
-
     // Calculate the total size
+    // No need to lock the queues here since we will not
+    // have 100% accurate size anyway because of the time it
+    // takes to lock the queues.
     size_t size = 0;
     for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
         size += queue->size[i];
     }
 
-    // Unlock all queues
-    for (int i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        pthread_mutex_unlock(&queue->queue_mutex[i]);
-    }
     return size;
 }
