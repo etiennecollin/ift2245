@@ -11,6 +11,7 @@
 
 typedef struct ready_queue ready_queue_t;
 typedef struct node node_t;
+typedef struct remove_parallel_data remove_parallel_data_t;
 
 struct ready_queue {
     pthread_cond_t cond;
@@ -31,6 +32,12 @@ struct node {
     process_t *process;
     struct node *next;
     struct node *prev;
+};
+
+struct remove_parallel_data {
+    process_t *process;
+    ready_queue_t *queue;
+    int stop;
 };
 
 /**
@@ -101,5 +108,9 @@ size_t ready_queue_size(ready_queue_t *queue);
 void add_to_quantum_average(ready_queue_t *queue, process_t *process);
 
 void remove_from_quantum_average(ready_queue_t *queue, process_t *process);
+
+void *remove_right_thread(void *thread_data);
+
+void *remove_left_thread(void *thread_data);
 
 #endif

@@ -16,7 +16,7 @@ const int BOOST_TIME = 3;
 // The higher the priority level, the lower the constant factor
 // The order of the constants is goes from the highest priority level to the lowest
 // i.e. const float CONSTANTS[] = {HIGHEST_PRIORITY_CONSTANT, ..., LOWEST_PRIORITY_CONSTANT};
-const float CONSTANTS[] = {0, 0.3, 0.5, 0.9};
+const float CONSTANTS[] = {0, 0.3, 0.5, 0.8};
 
 void *worker_run(void *user_data) {
     worker_t *worker = (worker_t *) user_data;
