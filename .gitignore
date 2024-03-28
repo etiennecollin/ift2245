@@ -1,0 +1,6 @@
+cmake-build-debug
+libelf
+tests_build
+.idea
+valgrind_output.txt
+venv
