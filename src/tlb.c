@@ -1,10 +1,12 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "tlb.h"
 
 #include "conf.h"
+#include "time.h"
 
 struct tlb_entry
 {
@@ -52,13 +54,17 @@ static void tlb__add_entry (unsigned int page_number, unsigned int frame_number,
           tlb_entries[i].page_number = page_number;
           tlb_entries[i].frame_number = frame_number;
           tlb_entries[i].readonly = readonly;
-          break;
+          return;
       }
   }
 
-  // no empty slot found. Replacement algorithm must be used
-  // TODO
+  // no empty slot found. Replacement algorithm must be used.
+  int victim = rand() % TLB_NUM_ENTRIES;
+  tlb_entries[victim].page_number = page_number;
+  tlb_entries[victim].frame_number = frame_number;
+  tlb_entries[victim].readonly = readonly; // TODO seed the random number generator at the start of the program
 }
+
 
 /******************** ¡ NE RIEN CHANGER CI-DESSOUS !  ******************/
 
