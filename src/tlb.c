@@ -34,16 +34,30 @@ void tlb_init (FILE *log)
  * Renvoie le `frame_number`, si trouvé, ou un nombre négatif sinon.  */
 static int tlb__lookup (unsigned int page_number, bool write)
 {
-  // TODO: COMPLÉTER CETTE FONCTION.
-  return -1;
+  for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
+      if (tlb_entries[i].page_number == page_number) { // page found in TLB
+          return tlb_entries[i].frame_number;
+      }
+  }
+  return -1; // page is not in TLB // TODO maybe add the page number and frame number to TLB, p.366 of the book
 }
 
 /* Ajoute dans le TLB une entrée qui associe `frame_number` à
  * `page_number`.  */
-static void tlb__add_entry (unsigned int page_number,
-                            unsigned int frame_number, bool readonly)
+// TODO : can't we keep an attribute for TLB num of elements that tells us how many pages are in the TLB?
+static void tlb__add_entry (unsigned int page_number, unsigned int frame_number, bool readonly)
 {
-  // TODO: COMPLÉTER CETTE FONCTION.
+  for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
+      if (tlb_entries[i].frame_number < 0) { // TLB empty slot found
+          tlb_entries[i].page_number = page_number;
+          tlb_entries[i].frame_number = frame_number;
+          tlb_entries[i].readonly = readonly;
+          break;
+      }
+  }
+
+  // no empty slot found. Replacement algorithm must be used
+  // TODO
 }
 
 /******************** ¡ NE RIEN CHANGER CI-DESSOUS !  ******************/

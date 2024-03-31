@@ -26,7 +26,7 @@ void pt_init (FILE *log)
 
 /* Recherche dans la table des pages.
  * Renvoie le `frame_number`, si valide, ou un nombre négatif sinon.  */
-static int pt__lookup (unsigned int page_number)
+static int pt__lookup (unsigned int page_number) // TODO do we need to modify pt_look_up_cout etc.
 {
     if (page_number < NUM_PAGES) {
         return page_table[page_number].frame_number;
