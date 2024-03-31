@@ -46,7 +46,7 @@ static int tlb__lookup (unsigned int page_number, bool write)
 
 /* Ajoute dans le TLB une entrée qui associe `frame_number` à
  * `page_number`.  */
-// TODO : can't we keep an attribute for TLB num of elements that tells us how many pages are in the TLB?
+// TODO : can we keep an attribute for TLB num of elements that tells us how many pages are in the TLB?
 static void tlb__add_entry (unsigned int page_number, unsigned int frame_number, bool readonly)
 {
   for (int i = 0; i < TLB_NUM_ENTRIES; i++) {

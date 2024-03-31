@@ -41,10 +41,27 @@ char vmm_read (unsigned int laddress)
 {
   char c = '!';
   read_count++;
-  /* ¡ TODO: COMPLÉTER ! */
 
-  // TODO: Fournir les arguments manquants.
-  vmm_log_command (stdout, "READING", laddress, 0, 0, 0, 0, c);
+  unsigned int temp = laddress;
+
+  unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
+  unsigned int page_number = (temp >> 8) & 0xFF; // get the last 8 bits of the address
+
+  // check if the page is in the TLB
+  int frame = tlb_lookup(page_number, false);
+  if (frame == -1) { // page is not in the TLB. Check in page table.
+      frame = pt_lookup(page_number);
+      if (frame == -1) { // frame number is not valid TODO: handle this case
+
+      }
+  }
+
+  // build physical address
+  unsigned int physical_address = frame;
+  physical_address = (physical_address << 8);
+  physical_address = physical_address | page_offset;
+  
+  vmm_log_command (stdout, "READING", laddress, page_number, frame, page_offset, physical_address, c);
   return c;
 }
 
