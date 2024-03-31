@@ -17,7 +17,7 @@ static unsigned int pt_set_count = 0;
 /* Initialise la table des pages, et indique où envoyer le log des accès.  */
 void pt_init (FILE *log)
 {
-  for (unsigned int i; i < NUM_PAGES; i++)
+  for (unsigned int i = 0; i < NUM_PAGES; i++)
     page_table[i].valid = false;
   pt_log = log;
 }
@@ -28,34 +28,34 @@ void pt_init (FILE *log)
  * Renvoie le `frame_number`, si valide, ou un nombre négatif sinon.  */
 static int pt__lookup (unsigned int page_number)
 {
-  // TODO: COMPLÉTER CETTE FONCTION.
-  return -1;
+    if (page_number < NUM_PAGES) {
+        return page_table[page_number].frame_number;
+    } else return -1;
 }
 
 /* Modifie l'entrée de `page_number` dans la page table pour qu'elle
  * pointe vers `frame_number`.  */
 static void pt__set_entry (unsigned int page_number, unsigned int frame_number)
 {
-  // TODO: COMPLÉTER CETTE FONCTION.
+  page_table[page_number].frame_number = frame_number;
 }
 
 /* Marque l'entrée de `page_number` dans la page table comme invalide.  */
 void pt_unset_entry (unsigned int page_number)
 {
-  // TODO: COMPLÉTER CETTE FONCTION.
+  page_table[page_number].valid = 0;
 }
 
 /* Renvoie si `page_number` est `readonly`.  */
 bool pt_readonly_p (unsigned int page_number)
 {
-  // TODO: COMPLÉTER CETTE FONCTION.
-  return true;
+  return page_table[page_number].readonly;
 }
 
 /* Change l'accès en écriture de `page_number` selon `readonly`.  */
 void pt_set_readonly (unsigned int page_number, bool readonly)
 {
-  // TODO: COMPLÉTER CETTE FONCTION.
+  page_table[page_number].readonly = readonly;
 }
 
 
