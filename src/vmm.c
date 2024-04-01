@@ -11,9 +11,11 @@
 #include "pt.h"
 #include "pm.h"
 
+
 static unsigned int read_count = 0;
 static unsigned int write_count = 0;
 static FILE* vmm_log;
+
 
 void vmm_init (FILE *log)
 {
