@@ -15,53 +15,80 @@ separator:
   in:
     - "echo a ; echo b\n"
     - "echo aa; echo bb; echo cc\n"
+    - "echo a ; echo b ; echo c ; echo d\n" # ADDED TEST
   out:
     - "a\nb"
     - "aa\nbb\ncc"
+    - "a\nb\nc\nd" # ADDED TEST
 and:
   weight: 1
   in:
     - "echo a && echo b\n"
     - "toto && echo b\n"
     - "echo a&&toto\n"
-    - ""
+    - "echo a && echo b && echo c && echo d\n" # ADDED TEST associativity ((echo a && echo b) && echo c) && echo d
   out:
     - "a\nb"
     - "toto: command not found"
     - "a\ntoto: command not found"
+    - "a\nb\nc\nd" # ADDED TEST
 or:
   weight: 1
   in:
     - "echo a || echo b\n"
     - "toto || echo b\n"
     - "echo a||toto\n"
+    - "echo a || echo b || echo c || echo d\n" # ADDED TEST associativity ((echo a || echo b) || echo c) || echo d
   out:
     - "a"
     - "toto: command not found\nb"
     - "a"
+    - "a" # ADDED TEST
 pipe:
   weight: 1
   in:
-      - "echo a | cat\n"
-      - "echo \\\"hello sir\\\" | cat | cat\n"
-      - "echo \\\"a b c\\\" | wc -l\n"
-      - "echo \\\"a\\\\nb\\\\nc\\\" | wc -l\n"
+    - "echo a | cat\n"
+    - "echo \\\"hello sir\\\" | cat | cat\n"
+    - "echo \\\"a b c\\\" | wc -l\n"
+    - "echo \\\"a\\\\nb\\\\nc\\\" | wc -l\n"
   out:
-      - "a"
-      - "hello sir"
-      - "1"
-      - "3"
+    - "a"
+    - "hello sir"
+    - "1"
+    - "3"
 pathological:
   weight: 1
   in:
-      - "echo a && echo b || echo c && echo d\n"
-      - "echo a || echo b && echo c || echo d\n"
-      - "echo worked || echo fallback | cat\n"
-      - "doesnotwork || echo fallback | cat\n"
-      - "echo a && echo b | cat | cat && echo c\n"
+    - "echo a && echo b || echo c && echo d\n"
+    - "echo a || echo b && echo c || echo d\n"
+    - "echo worked || echo fallback | cat\n"
+    - "doesnotwork || echo fallback | cat\n"
+    - "echo a && echo b | cat | cat && echo c\n"
+    - "echo a && echo b && echo c || echo d\n" # ADDED TEST associativity ((echo a && echo b) && echo c) || echo d
+    - "echo a || echo b || echo c && echo d\n" # ADDED TEST associativity ((echo a || echo b) || echo c) && echo d
+    - "bloop || echo b || echo c && echo d\n" # ADDED TEST associativity ((bloop || echo b) || echo c) && echo d
+    - "bloop && echo b && echo c || echo d\n" # ADDED TEST associativity ((bloop && echo b) && echo c) || echo d
+    - "echo a && echo bb || echo ccc || echo dddd | wc -c \n" # ADDED TEST associativity ((echo a && echo bb) || echo ccc) || (echo dddd | wc -c)
+    - "bloop && (echo a | cat) && echo bb || echo ccc | wc -c \n" # ADDED TEST associativity ((bloop && echo a) && echo bb) || (echo ccc | wc -c)
   out:
-      - "a\nb\nd"
-      - "a\nc"
-      - "worked"
-      - "doesnotwork: command not found\nfallback"
-      - "a\nb\nc"
+    - "a\nb\nd"
+    - "a\nc"
+    - "worked"
+    - "doesnotwork: command not found\nfallback"
+    - "a\nb\nc"
+    - "a\nb\nc" # ADDED TEST
+    - "a\nd" # ADDED TEST
+    - "bloop: command not found\nb\nd" # ADDED TEST
+    - "bloop: command not found\nd" # ADDED TEST
+    - "a\nbb" # ADDED TEST
+    - "bloop: command not found\n4" # ADDED TEST
+memory_edge_cases: # Memory edge cases, these tests are not graded, but they may make valgrind fail
+  weight: 0
+  in:
+    - "echo a;echo b;echo c;echo d;echo e;echo f;echo g;echo h;echo i;echo j;echo k;echo l;echo m;echo n;echo o;echo p;echo q;echo r;echo s;echo t;echo u;echo v;echo w;echo x;echo y;echo z\n" # ADDED TEST
+    - "echo a && && echo b\n" # ADDED TEST
+    - "echo a; echo b | || cat\n" # ADDED TEST
+  out:
+    - "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\nm\nn\no\np\nq\nr\ns\nt\nu\nv\nw\nx\ny\nz" # ADDED TEST
+    - "" # ADDED TEST
+    - "" # ADDED TEST

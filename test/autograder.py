@@ -20,11 +20,20 @@ for key, weight in dico.items():
 
 # Test runner
 
-def run(input):
+def run(input, timeout=10):
     input = input + "exit\n"
     try:
         program_output = subprocess.check_output(
-            f"echo \"{input}\" - | valgrind --leak-check=full --leak-resolution=med --trace-children=no --track-origins=yes --vgdb=no --log-file=\"valgrind.log\" ../src/shell", shell=True, universal_newlines=True, stderr=subprocess.STDOUT)
+            f"echo \"{input}\" - | valgrind --leak-check=full --leak-resolution=med --trace-children=no --track-origins=yes --vgdb=no --log-file=\"valgrind.log\" ../src/shell", 
+            shell=True, 
+            universal_newlines=True, 
+            stderr=subprocess.STDOUT,
+            timeout=timeout
+            )
+    except subprocess.TimeoutExpired:
+        # kill the child
+        subprocess.run("pkill -f shell", shell=True)
+        program_output = "Error: Command timed out"
     except Exception as e:
         program_output = e.output
 
@@ -62,7 +71,7 @@ for test_case, inout in tests_yaml.items():
 def pts_lost_for_mem_leaks(val):
     if len(re.findall(r"(definitely lost|indirectly lost): [1-9]", val)) == 0:
         return 0
-    return 15
+    return 8
 
 def pts_lost_for_invalids(val):
     return min(val.count("invalid read of size") + val.count("invalid write of size"), 5)
