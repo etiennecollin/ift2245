@@ -1,0 +1,1 @@
+/usr/bin/cc    CMakeFiles/check_tests.dir/checks.c.o CMakeFiles/check_tests.dir/home/charlie/Desktop/TP4/src/main.c.o CMakeFiles/check_tests.dir/call_by_string.c.o  -o check_tests  -lpthread -lcheck_pic -lpthread -lrt -lm -lsubunit -Wl,-Bstatic -lelf -Wl,-Bdynamic -lcheck_pic -lrt -lm -lsubunit -Wl,-Bstatic -lelf -Wl,-Bdynamic 

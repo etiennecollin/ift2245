@@ -1,0 +1,4 @@
+cmake-build-debug
+libelf
+tests_build
+.idea
