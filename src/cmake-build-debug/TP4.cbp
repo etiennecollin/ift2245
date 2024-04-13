@@ -8,81 +8,81 @@
 		<Option virtualFolders="CMake Files\;"/>
 		<Build>
 			<Target title="all">
-				<Option working_dir="/home/charlie/Desktop/TP4/src/cmake-build-debug"/>
+				<Option working_dir="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
-					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-				</MakeCommands>
-			</Target>
-			<Target title="edit_cache">
-				<Option working_dir="/home/charlie/Desktop/TP4/src/cmake-build-debug"/>
-				<Option type="4"/>
-				<MakeCommands>
-					<Build command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
-					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-				</MakeCommands>
-			</Target>
-			<Target title="rebuild_cache">
-				<Option working_dir="/home/charlie/Desktop/TP4/src/cmake-build-debug"/>
-				<Option type="4"/>
-				<MakeCommands>
-					<Build command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
-					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="TP4">
-				<Option output="/home/charlie/Desktop/TP4/src/cmake-build-debug/TP4" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/charlie/Desktop/TP4/src/cmake-build-debug"/>
+				<Option output="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/TP4" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/10/include"/>
-					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/include/x86_64-linux-gnu"/>
-					<Add directory="/usr/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 TP4"/>
-					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 TP4"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="TP4/fast">
-				<Option output="/home/charlie/Desktop/TP4/src/cmake-build-debug/TP4" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/charlie/Desktop/TP4/src/cmake-build-debug"/>
+				<Option output="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/TP4" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/10/include"/>
-					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/include/x86_64-linux-gnu"/>
-					<Add directory="/usr/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 TP4/fast"/>
-					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/charlie/Desktop/TP4/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 TP4/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/justinvilleneuve/Documents/UDEM\ informatique/S5/IFT2245/TP/tp4-merci-robin/src/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/charlie/Desktop/TP4/src/main.c">
+		<Unit filename="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/main.c">
 			<Option target="TP4"/>
 		</Unit>
-		<Unit filename="/home/charlie/Desktop/TP4/src/main.h">
+		<Unit filename="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/main.h">
 			<Option target="TP4"/>
 		</Unit>
-		<Unit filename="/home/charlie/Desktop/TP4/src/CMakeLists.txt">
+		<Unit filename="/Users/justinvilleneuve/Documents/UDEM informatique/S5/IFT2245/TP/tp4-merci-robin/src/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
 	</Project>

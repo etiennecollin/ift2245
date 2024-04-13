@@ -1,5 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/TP4.dir/main.c.o"
+  "CMakeFiles/TP4.dir/main.c.o.d"
   "TP4"
   "TP4.pdb"
 )
