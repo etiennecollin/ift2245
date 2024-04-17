@@ -40,11 +40,22 @@ uint32_t cluster_to_lba(BPB *block, uint32_t cluster, uint32_t first_data_sector
  * @param archive le fichier de l'archive
  * @return un src d'erreur
  */
-error_code get_cluster_chain_value(BPB *block,
-                                   uint32_t cluster,
-                                   uint32_t *value,
-                                   FILE *archive) {
-    return 0;
+error_code get_cluster_chain_value(BPB *block, uint32_t cluster, uint32_t *value, FILE *archive) {
+    uint32_t fat_offset = cluster * 4; // each entry in the FAT table is 32 bits (4 bytes)
+
+    // position cursor in the FAT table at the offset
+    if (fseek(archive, fat_offset, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
+        return GENERAL_ERR; // error positioning within the FAT file
+    }
+
+    // read the entry in the FAT table at the specified offset
+    if (fread(value, sizeof(uint32_t), 1, archive) != 1) {
+        return GENERAL_ERR; // error reading from the FAT
+    }
+
+    *value &= 0x0FFFFFFF; // only the first 28 bits in a FAT entry are relevant. Thus, the other 4 bits must be masked
+
+    return NO_ERR;
 }
 
 
