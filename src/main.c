@@ -68,7 +68,19 @@ error_code get_cluster_chain_value(BPB *block, uint32_t cluster, uint32_t *value
  * @return 0 ou 1 (faux ou vrai)
  */
 bool file_has_name(FAT_entry *entry, char *name) {
-    return 0;
+    char filename[9] ; // holds the filename (8 char) and the null terminator (1 char)
+    strncpy(filename, entry->DIR_Name, 8);
+    filename[8] = '\0'; // filename is null terminated
+
+    char extension[4]; // holds the extension (8 char) and the null terminator (1 char)
+    strncpy(extension, entry->DIR_Name + 8, 3);
+    extension[3] = '\0';
+
+    char full_name[13]; // filename => 8 char; "." => 1 char; extension => 3 char; null terminator => 1 char; 8 + 1 + 3 + 1 = 13
+    snprintf(full_name, sizeof(full_name), "%s.%s", filename, extension);
+
+    // strcasecmp returns 0 iff both strings are the same. strcasecmp is not case-sensitive
+    return strcasecmp(full_name, name) == 0;
 }
 
 /**
