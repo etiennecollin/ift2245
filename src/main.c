@@ -157,7 +157,26 @@ error_code break_up_path(char *path, uint8_t level, char **output) {
  * @return un src d'erreur
  */
 error_code read_boot_block(FILE *archive, BPB **block) {
-    return 0;
+    if (archive == NULL || block == NULL) {
+        return -1;
+    }
+
+    // allocate memory for the BPB structure
+    *block = (BPB *)malloc(sizeof(BPB));
+    if (*block == NULL) {
+        return -3; // memory allocation error
+    }
+
+    fseek(archive, 0, SEEK_SET); // the BPB is always the first sector of the volume
+
+    // read BPB from file into allocated memory
+    size_t bytes_read = fread(*block, sizeof(BPB), 1, archive);
+    if (bytes_read != 1) {
+        free(*block); //  free allocated memory
+        return -4; // read error
+    }
+
+    return 0; // no error
 }
 
 /**
@@ -191,7 +210,6 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
 
 int main() {
 // ous pouvez ajouter des tests pour les fonctions ici
-
     return 0;
 }
 
