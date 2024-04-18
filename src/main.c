@@ -95,7 +95,56 @@ bool file_has_name(FAT_entry *entry, char *name) {
  * -3 si out of memory
  */
 error_code break_up_path(char *path, uint8_t level, char **output) {
-    return 0;
+    if (path == NULL || output == NULL || level < 0) {
+        return -1; // invalid arguments
+    }
+
+    int part_count;
+    if (strlen(path) == 0) {
+        part_count = 0; // empty string
+    } else part_count = 1; // string isn't empty => part_count is at least 1
+
+    // find the position of the beginning of the part of the path
+    char *ptr = path;
+    if (*ptr == '/') {
+        ptr++; // case where the path starts with '/'. Must not be counted.
+    }
+    while (*ptr != '\0' && part_count < level) {
+        if (*ptr == '/') {
+            while (*ptr == '/') { // skip consecutive '/'
+                ptr++;
+            }
+            if (*ptr != '\0') {
+                part_count++;
+            }
+        }
+        ptr++;
+    }
+
+    // check whether the level is within bounds
+    if (level >= part_count) {
+        return -2; // not enough levels in the path
+    }
+
+    // ptr points to the part of the string we are looking
+    // let's determine the size of the string
+    char *start = ptr; // pointer to the start the string
+    int length = 1;
+    while (*ptr != '\0' && *ptr != '/') {
+        length++;
+        ptr++;
+    }
+
+    // allocate memory
+    *output = (char *)malloc(length + 1);
+    if (*output == NULL) {
+        return -3; // memory allocation error
+    }
+    // copy the substring into the output string
+    memcpy(*output, start, length);
+    (*output)[length] = '\0'; // add null terminator
+
+    return length + 1; // include the null character
 }
 
 
