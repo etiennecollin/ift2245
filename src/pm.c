@@ -21,15 +21,15 @@ void pm_init(FILE *backing_store, FILE *log) {
 // Charge la page demandée du backing store
 void pm_download_page(unsigned int page_number, unsigned int frame_number) {
     download_count++;
-    fseek(pm_backing_store, page_number * PAGE_FRAME_SIZE, SEEK_SET);
-    fread(pm_memory + frame_number * PAGE_FRAME_SIZE, 1, PAGE_FRAME_SIZE, pm_backing_store);
+    fseek(pm_backing_store, frame_number * PAGE_FRAME_SIZE, SEEK_SET);
+    fread(pm_memory + page_number, 1, PAGE_FRAME_SIZE, pm_backing_store);
 }
 
 // Sauvegarde la frame spécifiée dans la page du backing store
 void pm_backup_page(unsigned int frame_number, unsigned int page_number) {
     backup_count++;
-    fseek(pm_backing_store, page_number * PAGE_FRAME_SIZE, SEEK_SET);
-    fwrite(pm_memory + frame_number * PAGE_FRAME_SIZE, 1, PAGE_FRAME_SIZE, pm_backing_store);
+    fseek(pm_backing_store, frame_number * PAGE_FRAME_SIZE, SEEK_SET);
+    fwrite(pm_memory + page_number, 1, PAGE_FRAME_SIZE, pm_backing_store);
 }
 
 char pm_read(unsigned int physical_address) {

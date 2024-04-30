@@ -44,15 +44,14 @@ char vmm_read(unsigned int laddress) {
 
     unsigned int temp = laddress;
     unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
-    unsigned int page_number_shift = NUM_PAGES / 8;
-    unsigned int page_number = (temp >> page_number_shift) & 0xFF; // get the last 8 bits of the address
+    unsigned int page_number = temp >> 8; // get the last 24 bits of the address
 
     // get frame number
     int frame = get_frame(page_number);
 
     // build physical address and read from it
     unsigned int physical_address = get_physical_address(frame, page_offset);
-    c = pm_read(physical_address);
+    c = pm_read(page_number);
 
     vmm_log_command(stdout, "READING", laddress, page_number, frame, page_offset, physical_address, c);
     return c;
@@ -96,15 +95,14 @@ void vmm_write(unsigned int laddress, char c) {
     write_count++;
     unsigned int temp = laddress;
     unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
-    unsigned int page_number_shift = NUM_PAGES / 8;
-    unsigned int page_number = (temp >> page_number_shift) & 0xFF; // get the last 8 bits of the address
+    unsigned int page_number = temp >> 8; // get the last 24 bits of the address
 
     // get frame number
     int frame = get_frame(page_number);
 
     // build physical address
     unsigned int physical_address = get_physical_address(frame, page_offset);
-    pm_write(physical_address, c);
+    pm_write(page_number, c);
 
     // update dirty bit
     pt_set_readonly(page_number, false);
