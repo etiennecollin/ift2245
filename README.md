@@ -1,4 +1,5 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/aimGCC2y)
+
 <div class="center">
 
 # TP3 – Mémoire virtuelle
@@ -7,11 +8,11 @@
 
 ## !!ATTENTION!!
 
-- **Avant de commencer quoi que ce soit, ajoutez vos noms et matricules dans 
-`names.txt`! Vérifiez avec `name_validator.py` que le format est ok!**
+- **Avant de commencer quoi que ce soit, ajoutez vos noms et matricules dans
+  `names.txt`! Vérifiez avec `name_validator.py` que le format est ok!**
 
 - Ne modifiez rien dans le dossier `test`! Si nous détectons une modification, vous aurez la note de 0.
- **FAITES BIEN ATTENTION QUE LE AUTOGRADER DE GITHUB ROULE**
+  **FAITES BIEN ATTENTION QUE LE AUTOGRADER DE GITHUB ROULE**
 
 - **N'AJOUTEZ PAS DE INCLUDES DANS VOTRE CODE, SAUF AVEC PERMISSION!**
 
@@ -37,7 +38,7 @@ logiques à son adresse physique correspondante en utilisant un TLB
 # Mise en place
 
 Le code fournit devrait être directement compatible avec Clion. Cependant,
-le projet dépend des programmes *bison* et *flex* disponibles sur linux et MacOS.
+le projet dépend des programmes _bison_ et _flex_ disponibles sur linux et MacOS.
 
 **Sur linux**: vous pouvez les installer avec
 
@@ -64,20 +65,19 @@ possibles. Plus spécifiquement, le code fourni comprends déjà les
 structures de données de base pour un gestionnaire de mémoire avec les
 paramètres suivants (src/conf.h):
 
--   256 entrées dans la page table
+- 256 entrées dans la page table
 
--   Taille des pages et des frames de 256 bytes
+- Taille des pages et des frames de 256 bytes
 
--   Tout usage de matériel (code ou texte) emprunté à quelqu’un d’autre (trouvé sur le web, etc.) doit être dûment mentionné, sans quoi cela sera considéré comme du plagiat. Si pour une question votre solution est directement copiée, même si il y a attribution de la source, cette question se verra attribuée la note de zéro. Vous pourrez cependant l’utiliser dans les sections suivantes sans pénalité.
+- Tout usage de matériel (code ou texte) emprunté à quelqu’un d’autre (trouvé sur le web, etc.) doit être dûment mentionné, sans quoi cela sera considéré comme du plagiat. Si pour une question votre solution est directement copiée, même si il y a attribution de la source, cette question se verra attribuée la note de zéro. Vous pourrez cependant l’utiliser dans les sections suivantes sans pénalité.
 
--   Votre devoir sera corrigé automatiquement en très grande partie. Si vous déviez de ce qui est demandé en output, les points que vous perdrez seront perdus pour de bon. Si vous n’êtes pas certains d’un caractère demandé, demandez, et nous répondrons de façon à ce que chaque étudiant puisse voir la réponse.
+- Votre devoir sera corrigé automatiquement en très grande partie. Si vous déviez de ce qui est demandé en output, les points que vous perdrez seront perdus pour de bon. Si vous n’êtes pas certains d’un caractère demandé, demandez, et nous répondrons de façon à ce que chaque étudiant puisse voir la réponse.
 
--   La méthode de développement recommandée est d’utiliser CLion et son intégration avec Valgrind. Si vous voulez utiliser d’autres techniques, vous pouvez le faire, mais nous ne vous aiderons si vous rencontrez des problèmes avec ces techniques.
+- La méthode de développement recommandée est d’utiliser CLion et son intégration avec Valgrind. Si vous voulez utiliser d’autres techniques, vous pouvez le faire, mais nous ne vous aiderons si vous rencontrez des problèmes avec ces techniques.
 
--   8 entrées dans le TLB
+- 8 entrées dans le TLB
 
--   32 frames
-
+- 32 frames
 
 # Description du projet
 
@@ -103,62 +103,64 @@ correspondant. Dans le cas contraire, un page-fault est produit.
 
 Votre programme devra implémenter la pagination sur demande (section 9.2
 du livre). Lorsque un page-fault est produit, vous devez lire une page
-de taille 256 bytes du fichier *BACKING\_STORE.txt* et le stocker dans
+de taille 256 bytes du fichier _BACKING_STORE.txt_ et le stocker dans
 un frame disponible dans la mémoire physique (au début du programme la
 mémoire physique commence toujours vide).
 
 Par exemple, si l’adresse logique avec numéro de page 15 produit un
 page-fault, votre programme doit lire la page 15 depuis le
-*backing store* (rapellez-vous que les pages commencent à l’index 0
+_backing store_ (rapellez-vous que les pages commencent à l’index 0
 et qu’elles font 256 bytes) et copier son contenu dans une frame libre
 dans la mémoire physique. Une fois ce frame stocké (et que la table de
 pages et le TLB sont mis à jour), les futurs accès à la page 15 seront
 adressé soit par le TLB ou soit par la table de page jusqu’à ce que la
-page soit déchargé de la mémoire (swapped out). 
+page soit déchargé de la mémoire (swapped out).
 
 Le fichier
-*BACKING\_STORE.txt* est déjà ouvert et fermé pour vous. Il se peut que nous changions le fichier
+_BACKING_STORE.txt_ est déjà ouvert et fermé pour vous. Il se peut que nous changions le fichier
 texte qui représente le backing store lors de la correction. Vous n'avez pas à vous en souciez. Le backing store contient
 65536 caractères imprimables aléatoires. Suggestion: générez des programmes aléatoires simuler des accès mémoires plus compliqués que le/les exemples donnés.
 
 ## Commandes
 
 Les commandes que votre programme a à gérer sont automatiquement lues par les fichiers générés par
-*flex* et *bison*. Les fonctions *vmm\_read* et *vmm\_write* sont
+_flex_ et _bison_. Les fonctions _vmm_read_ et _vmm_write_ sont
 automatiquement appelées. Vous ne devriez donc vous préoccuper du
 fonctionnement du programme qu’à partir de la gestion des commandes
 lues.
 
-La lecture des commandes se fait par l’entrée standard (*stdin*) et les
+La lecture des commandes se fait par l’entrée standard (_stdin_) et les
 commandes invalides sont ignorées. Les commandes sont de la forme
 suivante:
 
-### commande d’écriture  
-w&lt;*logical-address*&gt;’&lt;*char-to-write*&gt;’;  
-ex: *w20’b’;*
+### commande d’écriture
 
-### commande de lecture  
-r&lt;*logical-address*&gt;;  
-ex: *r89;*
+w&lt;_logical-address_&gt;’&lt;_char-to-write_&gt;’;  
+ex: _w20’b’;_
+
+### commande de lecture
+
+r&lt;_logical-address_&gt;;  
+ex: _r89;_
 
 ## Points d'entrée
 
-Pour réitérer: les points d'entrée de votre programme sont les fonctions *vmm\_read* et *vmm\_write*
-de *vmm.c*. Vous pouvez les voir comme deux fonctions main.
+Pour réitérer: les points d'entrée de votre programme sont les fonctions _vmm_read_ et _vmm_write_
+de _vmm.c_. Vous pouvez les voir comme deux fonctions main.
 
 # Travail à effectuer
 
-Vous devez implémenter les fonctions incomplètes de *vmm.c*, *pm.c*,
-*pt.c*, et *tlb.c*, y compris l’implémentation de l’algorithme de
+Vous devez implémenter les fonctions incomplètes de _vmm.c_, _pm.c_,
+_pt.c_, et _tlb.c_, y compris l’implémentation de l’algorithme de
 remplacement du TLB et des frames ainsi que la gestion de l’état “dirty”
 des pages.
 
 De plus, vous devez corriger les sorties déjà définies dans les
-fonctions *vmm\_read* et *vmm\_write* afin de fournir l’ensemble des
+fonctions _vmm_read_ et _vmm_write_ afin de fournir l’ensemble des
 valeurs qu’il faut afficher.
 
-Finalement, vous pouvez générer des fichiers de input/test vous même (exemple: *tests/command_tlb.in*
-et *tests/command_pt.in*) pour tester l’efficacité du TLB ou tester l’algorithme de remplacement des pages.
+Finalement, vous pouvez générer des fichiers de input/test vous même (exemple: _tests/command_tlb.in_
+et _tests/command_pt.in_) pour tester l’efficacité du TLB ou tester l’algorithme de remplacement des pages.
 
 ## Quelques précisions
 
@@ -180,5 +182,5 @@ Le path sera différent pour vous, mais c'est l'idée générale.
 # Barême et remise
 
 - Votre note sera divisée équitablement entre chaque fichier C principal (pm, pt, tlb, vmm), la qualité de vos tests de TLB et de PT, et la
-qualité de votre algorithme de remplacement.
+  qualité de votre algorithme de remplacement.
 - Les barèmes standards du [TPX](https://github.com/IFT2245/TPX) s'appliquent (fuites mémoires, accès illégaux, etc).
