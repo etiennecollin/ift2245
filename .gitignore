@@ -4,3 +4,4 @@ tests_build
 .idea
 valgrind_output.txt
 venv
+cmake-build-debug-*
