@@ -44,7 +44,7 @@ char vmm_read(unsigned int laddress) {
 
     unsigned int temp = laddress;
     unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
-    unsigned int page_number = temp >> 8; // get the last 24 bits of the address
+    unsigned int page_number = temp / PAGE_FRAME_SIZE; // get the last 24 bits of the address
 
     // get frame number
     int frame = get_frame(page_number);
@@ -57,10 +57,30 @@ char vmm_read(unsigned int laddress) {
     return c;
 }
 
+/* Effectue une écriture à l'adresse logique 'laddress'.  */
+void vmm_write(unsigned int laddress, char c) {
+    write_count++;
+    unsigned int temp = laddress;
+    unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
+    unsigned int page_number = temp / PAGE_FRAME_SIZE; // get the last 24 bits of the address
+
+    // get frame number
+    int frame = get_frame(page_number);
+
+    // build physical address
+    unsigned int physical_address = get_physical_address(frame, page_offset);
+    pm_write(page_number, c);
+
+    // update dirty bit
+    pt_set_readonly(page_number, false);
+
+    vmm_log_command(stdout, "WRITING", laddress, page_number, frame, page_offset, physical_address, c);
+}
+
 unsigned int get_physical_address(unsigned int frame, unsigned int page_offset) {
     // build physical address
     unsigned int physical_address = frame;
-    physical_address = physical_address << 8;
+    physical_address = physical_address * PAGE_FRAME_SIZE;
     physical_address = physical_address | page_offset;
     return physical_address;
 }
@@ -78,6 +98,30 @@ int get_frame(unsigned int page_number) {
 
         // page fault
         if (frame == -1) {
+            frame = find_free_frame_number();
+            if (frame == -1) {
+                frame = find_victim_frame_number();
+
+                // find the page number with the TLB
+                int page = remove_page_from_tlb(frame);
+
+                // check if the page was in the TLB
+                if (page != -1) {
+                    // if not, find it in the page table
+                    page = pt_find_page(frame);
+                }
+
+                // check if the page was modified
+                if (pt_readonly_p(page) == false) {
+                    // save the page to the backing store
+                    pm_backup_page(frame, page);
+                }
+
+                // update the page table
+                pt_unset_entry(page);
+            }
+
+
             // download the page from the backing store
             pm_download_page(page_number, frame);
             // update the page table
@@ -89,27 +133,6 @@ int get_frame(unsigned int page_number) {
     }
     return frame;
 }
-
-/* Effectue une écriture à l'adresse logique 'laddress'.  */
-void vmm_write(unsigned int laddress, char c) {
-    write_count++;
-    unsigned int temp = laddress;
-    unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
-    unsigned int page_number = temp >> 8; // get the last 24 bits of the address
-
-    // get frame number
-    int frame = get_frame(page_number);
-
-    // build physical address
-    unsigned int physical_address = get_physical_address(frame, page_offset);
-    pm_write(page_number, c);
-
-    // update dirty bit
-    pt_set_readonly(page_number, false);
-
-    vmm_log_command(stdout, "WRITING", laddress, page_number, frame, page_offset, physical_address, c);
-}
-
 
 // NE PAS MODIFIER CETTE FONCTION
 void vmm_clean(void) {

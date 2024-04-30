@@ -20,4 +20,8 @@ void pm_write(unsigned int physical_address, char);
 
 void pm_clean(void);
 
+int find_victim_frame_number();
+
+int find_free_frame_number();
+
 #endif

@@ -19,4 +19,6 @@ void tlb_add_entry(unsigned int page_number,
 
 void tlb_clean(void);
 
+int remove_page_from_tlb(unsigned int frame);
+
 #endif

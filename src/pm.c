@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #include "conf.h"
 #include "pm.h"
@@ -10,6 +12,7 @@ static unsigned int download_count = 0;
 static unsigned int backup_count = 0;
 static unsigned int read_count = 0;
 static unsigned int write_count = 0;
+static unsigned int bitmap[NUM_FRAMES];
 
 // Initialise la mémoire physique
 void pm_init(FILE *backing_store, FILE *log) {
@@ -18,18 +21,39 @@ void pm_init(FILE *backing_store, FILE *log) {
     memset(pm_memory, '\0', sizeof(pm_memory));
 }
 
+
+int find_victim_frame_number() {
+    // TODO: implement a replacement algorithm
+    int victim = rand() % NUM_FRAMES;
+    return victim;
+}
+
+int find_free_frame_number() {
+    for (unsigned int i = 0; i < NUM_FRAMES; i += 1) {
+        if (bitmap[i] == false) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
 // Charge la page demandée du backing store
 void pm_download_page(unsigned int page_number, unsigned int frame_number) {
     download_count++;
-    fseek(pm_backing_store, frame_number * PAGE_FRAME_SIZE, SEEK_SET);
-    fread(pm_memory + page_number, 1, PAGE_FRAME_SIZE, pm_backing_store);
+    fseek(pm_backing_store, page_number * PAGE_FRAME_SIZE, SEEK_SET);
+
+    unsigned int physical_addr = frame_number * PAGE_FRAME_SIZE;
+    fread(pm_memory + physical_addr, PAGE_FRAME_SIZE, 1, pm_backing_store);
 }
 
 // Sauvegarde la frame spécifiée dans la page du backing store
 void pm_backup_page(unsigned int frame_number, unsigned int page_number) {
     backup_count++;
-    fseek(pm_backing_store, frame_number * PAGE_FRAME_SIZE, SEEK_SET);
-    fwrite(pm_memory + page_number, 1, PAGE_FRAME_SIZE, pm_backing_store);
+    fseek(pm_backing_store, page_number * PAGE_FRAME_SIZE, SEEK_SET);
+
+    unsigned int physical_addr = frame_number * PAGE_FRAME_SIZE;
+    fwrite(pm_memory + physical_addr, PAGE_FRAME_SIZE, 1, pm_backing_store);
 }
 
 char pm_read(unsigned int physical_address) {
