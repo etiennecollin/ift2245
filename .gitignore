@@ -2,3 +2,4 @@ cmake-build-debug
 libelf
 tests_build
 .idea
+cmake-build-debug-*
