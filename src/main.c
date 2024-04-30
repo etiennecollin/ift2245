@@ -68,7 +68,7 @@ error_code get_cluster_chain_value(BPB *block, uint32_t cluster, uint32_t *value
  * @return 0 ou 1 (faux ou vrai)
  */
 bool file_has_name(FAT_entry *entry, char *name) {
-    char filename[9] ; // holds the filename (8 char) and the null terminator (1 char)
+    char filename[9]; // holds the filename (8 char) and the null terminator (1 char)
     strncpy(filename, entry->DIR_Name, 8);
     filename[8] = '\0'; // filename is null terminated
 
@@ -136,7 +136,7 @@ error_code break_up_path(char *path, uint8_t level, char **output) {
     }
 
     // allocate memory
-    *output = (char *)malloc(length + 1);
+    *output = (char *) malloc(length + 1);
     if (*output == NULL) {
         return -3; // memory allocation error
     }
@@ -162,7 +162,7 @@ error_code read_boot_block(FILE *archive, BPB **block) {
     }
 
     // allocate memory for the BPB structure
-    *block = (BPB *)malloc(sizeof(BPB));
+    *block = (BPB *) malloc(sizeof(BPB));
     if (*block == NULL) {
         return -3; // memory allocation error
     }

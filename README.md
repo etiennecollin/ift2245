@@ -1,9 +1,8 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/pM2OQhWF)
-TP4: FAT 32 
+TP4: FAT 32
 =============
 
-Introduction 
-------------
+## Introduction
 
 Le système de fichier FAT aurait été dévelopé par Bill Gates lui-même
 sur une napkin dans un hôtel. C'est un système de fichier simple,
@@ -15,8 +14,7 @@ commerciales des systèmes de fichiers rendent FAT32 obsolète (il ne
 permet pas un accès très rapide aux fichiers), il reste important de nos
 jours et son étude est encore très pertinente.
 
-Instructions générales 
-----------------------
+## Instructions générales
 
 Afin de tester votre implémentation, un fichier **floppy.img** est
 fourni. L'arborescence de ce fichier est donnée en fin de l'énoncé. Ce
@@ -39,7 +37,7 @@ toujours une partition qui occupe l'entièreté du disque. De plus,
 l'image donnée ainsi que celles utilisées pour les tests correspondront
 toujours à de vraies images FAT32 correctes. Cependant, vous ne pouvez
 pas assumer que la géométrie de l'image sera toujours la même. Par
-exemple, un *cluster* pourrait contenir plus de secteurs pour un disque
+exemple, un _cluster_ pourrait contenir plus de secteurs pour un disque
 qu'un autre. De plus, les secteurs ne seront **pas** toujours 512 bytes.
 
 Vous pouvez aussi assumer que le système de fichier n'est pas corrompu
@@ -59,8 +57,7 @@ il faut parfois faire une quantitée de code non-triviale afin de pouvoir
 tester des choses plus petites. Cela fait partie de la difficulté de ce
 TP.
 
-Objectifs d'apprentissage 
--------------------------
+## Objectifs d'apprentissage
 
 Ce TP vise à vous faire découvrire les "joies" du dévelopement de support
 pour un système de fichier. En effet, vous aurez à implémenter une très
@@ -71,14 +68,13 @@ triviale, même pour un système de fichier aussi simple que FAT32.
 Voici une liste non-exhaustive des éléments pédagogiques que vous
 retrouverez dans ce TP
 
--   Lecture et compréhension de documents techniques
+- Lecture et compréhension de documents techniques
 
--   Principes généraux des systèmes de fichiers
+- Principes généraux des systèmes de fichiers
 
--   Implémentation de code résistant aux erreurs
+- Implémentation de code résistant aux erreurs
 
-Gestion des erreurs 
--------------------
+## Gestion des erreurs
 
 Plusieurs erreurs peuvent se produire lors de la lecture d'un disque.
 Des outils sont mis à votre disposition dans l'entête du fichier pour
@@ -91,10 +87,9 @@ document pour faire la bonne chose. Portez attention aux arguments des
 fonctions. Des arguments nuls sont une condition suffisante pour
 provoquer une erreur lors de l'appel d'une fonctions.
 
-Fonctions à implémenter 
------------------------
+## Fonctions à implémenter
 
-### 1- Cluster vers LBA 
+### 1- Cluster vers LBA
 
 La première fonction que vous aurez à implémenter est la suivante:
 
@@ -109,7 +104,7 @@ correcte. De plus, le BPB doit être utilisé pour tenir compte de la
 géométrie du disque. La formule de conversion est donné verbatim dans
 notre document.
 
-### 2- Aller chercher le prochain maillon de la chaîne FAT 
+### 2- Aller chercher le prochain maillon de la chaîne FAT
 
     error_code get_cluster_chain_value(BPB *block,
                                        uint32 cluster,
@@ -125,7 +120,7 @@ lecture de fichier sera impossible. Il n'est pas nécéssaire de vérifier
 l'information avec la deuxième table FAT, seule la première suffira dans
 ce TP.
 
-### 3- Vérifier le nom d'une entrée 
+### 3- Vérifier le nom d'une entrée
 
     bool file_has_name(FAT_entry *entry, char *name)
 
@@ -137,7 +132,7 @@ claire à ce sujet) pour comparer les noms. Vous n'avez pas
 nécéssairement besoin de gérer tous les cas spéciaux, mais cela pourrait
 être utile dans d'autres fonctions.
 
-### 4- Analyser un chemin 
+### 4- Analyser un chemin
 
     error_code break_up_path(char *path, uint8 level, char **output);
 
@@ -152,7 +147,7 @@ construits comme des fichiers dans FAT32 (on laisse donc ces morceaux
 dans la chaîne). Le erreur code, en cas ou il n'y a pas d'erreur,
 retourne la longueur de ce tableau.
 
-### 5- Aller lire le *boot block* 
+### 5- Aller lire le _boot block_
 
     error_code read_boot_block(FILE *archive, BPB **block);
 
@@ -163,7 +158,7 @@ toute l'information nécéssaire pour la lecture de l'archive. En
 particulier, le BPB donne des informations quant à la géométrie du
 disque.
 
-### 6- Trouver un descripteur de fichier 
+### 6- Trouver un descripteur de fichier
 
     error_code find_file_descriptor(FILE *archive,
                                     BPB *block,
@@ -176,7 +171,7 @@ au travers l'arborescence de dossiers. La fonction doit être capable de
 déterminer que le chemin n'est pas valide. Par exemple, un chemin qui
 utilise un fichier comme un dossier ne devrait pas fonctionner.
 
-### 7- Aller lire le contenu d'un fichier 
+### 7- Aller lire le contenu d'un fichier
 
     error_code read_file(FILE *archive,
                          BPB *block,
@@ -198,24 +193,23 @@ des \"..\"). Afin de minimiser le travaille à faire, je vous conseille
 des dossiers, qui explique comment les relations entre ceux-ci sont
 modélisées dans le système de fichier FAT32.
 
-Contenu de l'image 
-------------------
+## Contenu de l'image
 
-Si vous utilisez linux, vous pouvez *monter* l'image pour modifier son
+Si vous utilisez linux, vous pouvez _monter_ l'image pour modifier son
 contenu. Cela vous permet d'ajouter des fichiers, et de changer
 l'architecture de l'image. La commande s'effectue ainsi:
 
-``` {.sh language="sh"}
-mount floppy.img mntpnt 
+```{.sh language="sh"}
+mount floppy.img mntpnt
 umount mntpnt
 ```
 
-La commande *mount* permet de mapper l'archive à un dossier, ce qui
-permet d'opérer dessus comme si c'était un disque. La commande *umount*
+La commande _mount_ permet de mapper l'archive à un dossier, ce qui
+permet d'opérer dessus comme si c'était un disque. La commande _umount_
 permet de défaire l'opération et de continuer à utiliser l'archive.
 
 **Attention!**
-La commande *mount* ne fonctionne pas sur le WSLV1. Elle ne fonctionne pas 
+La commande _mount_ ne fonctionne pas sur le WSLV1. Elle ne fonctionne pas
 sur Windows et sur MacOS le fonctionnement est peut-être différent. Être capable
 de monter l'archive n'est **pas** nécéssaire, mais peut être un outil utile pour
 débugger. Le contenu du disque est décrit dans la prochaine section, ce qui devrait
@@ -225,7 +219,7 @@ vous aider à ne pas avoir besoin de le monter l'image.
 Si vous modifier l'archive, portez attention à entrer des noms de
 fichiers en majuscules, de taille inférieure ou égale à 11, incluant
 l'extention. Sinon, votre système créera des fichiers en utilisant
-l'extention *long file name* à FAT32, ce qui rendra les noms de fichiers
+l'extention _long file name_ à FAT32, ce qui rendra les noms de fichiers
 différents de ce que vous vous attendez. L'archive donnée tiens compte
 de cette particularité.
 
@@ -240,15 +234,14 @@ L'image **floppy.img** contient le système de fichier suivant:
     ----ZOLA.TXT
     ----HELLO.TXT
 
-Cette représentation à été obtenue en appelant la commande *tree* à la
+Cette représentation à été obtenue en appelant la commande _tree_ à la
 racine du dossier de l'archive. Les fichiers sont des livres du Projet
 Gutenberg. Leur longueur dépend des fichiers, vous pouvez les monter
 pour aller les lire. Le fichier HELLO.TXT contient le texte \"Bonne
 chance pour le TP4\". Celui-ci est plus petit et est contenu dans un
 cluster ce qui devrait faciliter la tâche au départ.
 
-Remise 
-------
+## Remise
 
 Chaque jour de retard est -15%, mais après le deuxième jour la remise ne
 sera pas acceptée.
@@ -262,16 +255,13 @@ Vous pouvez valider l'entête de votre fichier en utilisant le projet
 situé ici: <https://github.com/IFT2245/NameValidator>. Une entête
 invalide se méritera la note de 0.
 
+## Évaluation du TP
 
-Évaluation du TP 
-----------------
-
-Nous évaluerons votre TP principalement grâce à la fonction read\_file.
+Nous évaluerons votre TP principalement grâce à la fonction read_file.
 Si le contenu d'un fichier est lu correctement, le test passera.
 
-Barème 
-------
+## Barème
 
--   Votre note sera divisé équitablement entre chaque question, sauf les
-    questions 6 et 7 qui ont pour valeur l'équivalent de 2 questions.
+- Votre note sera divisé équitablement entre chaque question, sauf les
+  questions 6 et 7 qui ont pour valeur l'équivalent de 2 questions.
 - Les barèmes standards du [TPX](https://github.com/IFT2245/TPX) s'appliquent (fuites mémoires, accès illégaux, etc).
