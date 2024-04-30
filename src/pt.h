@@ -35,4 +35,8 @@ void pt_set_readonly(unsigned int page_number, bool readonly);
 
 void pt_clean(void);
 
+bool pt_valid_p(unsigned int page_number);
+
+int pt_find_page(unsigned int frame_number);
+
 #endif

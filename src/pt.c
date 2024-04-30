@@ -48,6 +48,19 @@ bool pt_readonly_p(unsigned int page_number) {
     return page_table[page_number].readonly;
 }
 
+bool pt_valid_p(unsigned int page_number) {
+    return page_table[page_number].valid;
+}
+
+int pt_find_page(unsigned int frame_number) {
+    for (unsigned int i = 0; i < NUM_PAGES; i++) {
+        if (page_table[i].frame_number == frame_number) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 /* Change l'accès en écriture de 'page_number' selon 'readonly'.  */
 void pt_set_readonly(unsigned int page_number, bool readonly) {
     page_table[page_number].readonly = readonly;

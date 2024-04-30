@@ -35,7 +35,7 @@ void tlb_init(FILE *log) {
 static int tlb__lookup(unsigned int page_number, bool write) {
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
         if (tlb_entries[i].page_number == page_number) {
-            // Page found in TLB
+            // page found in TLB
             return tlb_entries[i].frame_number;
         }
     }
@@ -59,6 +59,16 @@ static void tlb__add_entry(unsigned int page_number, unsigned int frame_number, 
     tlb_entries[victim].page_number = page_number;
     tlb_entries[victim].frame_number = frame_number;
     tlb_entries[victim].readonly = readonly; // TODO seed the random number generator at the start of the program
+}
+
+int remove_page_from_tlb(unsigned int frame) {
+    for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
+        if (tlb_entries[i].frame_number == frame) {
+            tlb_entries[i].frame_number = -1;
+            return tlb_entries[i].page_number;
+        }
+    }
+    return -1;
 }
 
 
