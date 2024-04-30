@@ -8,14 +8,13 @@
 
 
 void
-error (const char *fmt, ...)
-{
-  va_list valist;
+error(const char *fmt, ...) {
+    va_list valist;
 
-  va_start (valist, fmt);
+    va_start (valist, fmt);
 
-  vfprintf (stderr, fmt, valist);
-  exit (EXIT_FAILURE);
+    vfprintf(stderr, fmt, valist);
+    exit(EXIT_FAILURE);
 
-  va_end (valist);
+    va_end (valist);
 }
