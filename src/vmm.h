@@ -16,4 +16,8 @@ void vmm_write(unsigned int logical_address, char);
 
 void vmm_clean(void);
 
+unsigned int get_physical_address(unsigned int frame, unsigned int page_offset);
+
+int get_frame(unsigned int page_number);
+
 #endif

@@ -37,54 +37,77 @@ static void vmm_log_command(FILE *out, const char *command,
                 page, offset, frame, paddress);
 }
 
-/* Effectue une lecture à l'adresse logique `laddress`.  */
+/* Effectue une lecture à l'adresse logique 'laddress'.  */
 char vmm_read(unsigned int laddress) {
     char c = '!';
     read_count++;
 
     unsigned int temp = laddress;
     unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
-    unsigned int page_number = (temp >> 8) & 0xFF; // get the last 8 bits of the address
+    unsigned int page_number_shift = NUM_PAGES / 8;
+    unsigned int page_number = (temp >> page_number_shift) & 0xFF; // get the last 8 bits of the address
 
-    // check if the page is in the TLB
-    int frame = tlb_lookup(page_number, false);
-    if (frame == -1) { // page is not in the TLB. Check in page table.
-        frame = pt_lookup(page_number);
-        if (frame == -1) { // frame number is not valid TODO: handle this case
+    // get frame number
+    int frame = get_frame(page_number);
 
-        }
-    }
-
-    // build physical address
-    unsigned int physical_address = frame;
-    physical_address = physical_address << 8;
-    physical_address = physical_address | page_offset;
+    // build physical address and read from it
+    unsigned int physical_address = get_physical_address(frame, page_offset);
+    c = pm_read(physical_address);
 
     vmm_log_command(stdout, "READING", laddress, page_number, frame, page_offset, physical_address, c);
     return c;
 }
 
-/* Effectue une écriture à l'adresse logique `laddress`.  */
-void vmm_write(unsigned int laddress, char c) {
-    write_count++;
-    unsigned int temp = laddress;
-    unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
-    unsigned int page_number = (temp >> 8) & 0xFF; // get the last 8 bits of the address
-
-    // check if the page is in the TLB
-    int frame = tlb_lookup(page_number, false);
-    if (frame == -1) { // page is not in the TLB. Check in page table.
-        // frame = pt_lookup(page_number);
-        frame = pt_lookup(page_number);
-        if (frame == -1) { // frame number is not valid TODO: handle this case
-
-        }
-    }
-
+unsigned int get_physical_address(unsigned int frame, unsigned int page_offset) {
     // build physical address
     unsigned int physical_address = frame;
     physical_address = physical_address << 8;
     physical_address = physical_address | page_offset;
+    return physical_address;
+}
+
+int get_frame(unsigned int page_number) {
+    int frame;
+    LOOKUP:
+    // check if the page is in the TLB
+    frame = tlb_lookup(page_number, false);
+
+    // page is not in the TLB
+    if (frame == -1) {
+        // check if the page is in the page table
+        frame = pt_lookup(page_number);
+
+        // page fault
+        if (frame == -1) {
+            // download the page from the backing store
+            pm_download_page(page_number, frame);
+            // update the page table
+            pt_set_entry(page_number, frame);
+            goto LOOKUP;
+        }
+        // add the page to the TLB
+        tlb_add_entry(page_number, frame, pt_readonly_p(page_number));
+    }
+    return frame;
+}
+
+/* Effectue une écriture à l'adresse logique 'laddress'.  */
+void vmm_write(unsigned int laddress, char c) {
+    write_count++;
+    unsigned int temp = laddress;
+    unsigned int page_offset = temp & 0xFF; // get first 8 bits of the address
+    unsigned int page_number_shift = NUM_PAGES / 8;
+    unsigned int page_number = (temp >> page_number_shift) & 0xFF; // get the last 8 bits of the address
+
+    // get frame number
+    int frame = get_frame(page_number);
+
+    // build physical address
+    unsigned int physical_address = get_physical_address(frame, page_offset);
+    pm_write(physical_address, c);
+
+    // update dirty bit
+    pt_set_readonly(page_number, false);
 
     vmm_log_command(stdout, "WRITING", laddress, page_number, frame, page_offset, physical_address, c);
 }

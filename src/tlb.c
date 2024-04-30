@@ -31,18 +31,18 @@ void tlb_init(FILE *log) {
 /******************** ¡ NE RIEN CHANGER CI-DESSUS !  ******************/
 
 /* Recherche dans le TLB.
- * Renvoie le `frame_number`, si trouvé, ou un nombre négatif sinon.  */
+ * Renvoie le 'frame_number', si trouvé, ou un nombre négatif sinon.  */
 static int tlb__lookup(unsigned int page_number, bool write) {
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
-        if (tlb_entries[i].page_number == page_number) { // page found in TLB
+        if (tlb_entries[i].page_number == page_number) {
+            // Page found in TLB
             return tlb_entries[i].frame_number;
         }
     }
-    return -1; // page is not in TLB // TODO maybe add the page number and frame number to TLB, p.366 of the book
+    return -1; // page is not in TLB
 }
 
-/* Ajoute dans le TLB une entrée qui associe `frame_number` à
- * `page_number`.  */
+/* Ajoute dans le TLB une entrée qui associe 'frame_number' à 'page_number'.  */
 // TODO : can we keep an attribute for TLB num of elements that tells us how many pages are in the TLB?
 static void tlb__add_entry(unsigned int page_number, unsigned int frame_number, bool readonly) {
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
