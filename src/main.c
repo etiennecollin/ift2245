@@ -48,7 +48,7 @@ error_code get_cluster_chain_value(BPB *block, uint32_t cluster, uint32_t *value
         return GENERAL_ERR; // error positioning within the FAT file
     }
 
-    // read the entry in the FAT table at the specified offset
+    // read the entry in the FAT table at the specified offset. This entry contains the next cluster of the file
     if (fread(value, sizeof(uint32_t), 1, archive) != 1) {
         return GENERAL_ERR; // error reading from the FAT
     }
@@ -144,7 +144,7 @@ error_code break_up_path(char *path, uint8_t level, char **output) {
     memcpy(*output, start, length);
     (*output)[length] = '\0'; // add null terminator
 
-    return length + 1; // include the null character
+    return NO_ERR; // include the null character
 }
 
 
@@ -176,7 +176,7 @@ error_code read_boot_block(FILE *archive, BPB **block) {
         return -4; // read error
     }
 
-    return 0; // no error
+    return NO_ERR;
 }
 
 /**
@@ -209,8 +209,7 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
 // ༽つ۞﹏۞༼つ
 
 int main() {
-// ous pouvez ajouter des tests pour les fonctions ici
-    return 0;
+// vous pouvez ajouter des tests pour les fonctions ici
 }
 
 // ༽つ۞﹏۞༼つ
