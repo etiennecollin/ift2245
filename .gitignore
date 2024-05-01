@@ -5,3 +5,4 @@ tests_build
 valgrind_output.txt
 venv
 cmake-build-debug-*
+cmake-build-release*
