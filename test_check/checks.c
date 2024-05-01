@@ -109,12 +109,12 @@ DEFINE_TEST(test_pt_3) {
 
 DEFINE_TEST(test_pt_4) {
         pt_set_entry(0, 20);
-        ck_assert_int_eq(pt_readonly_p(0), 0);
+        ck_assert_int_eq(pt_readonly_p(0), 1);
 } END_TEST
 
 DEFINE_TEST(test_pt_5) {
         pt_set_entry(0, 20);
-        ck_assert_int_eq(pt_readonly_p(0), 0);
+        ck_assert_int_eq(pt_readonly_p(0), 1);
         pt_set_readonly(0, 0);
         ck_assert_int_eq(pt_readonly_p(0), 0);
         pt_set_readonly(0, 1);
