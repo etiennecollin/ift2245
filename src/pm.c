@@ -21,13 +21,6 @@ void pm_init(FILE *backing_store, FILE *log) {
     memset(pm_memory, '\0', sizeof(pm_memory));
 }
 
-
-int find_victim_frame_number() {
-    // TODO: implement a replacement algorithm
-    int victim = 2;
-    return victim;
-}
-
 int find_free_frame_number() {
     for (int i = 0; i < NUM_FRAMES; i++) {
         if (bitmap[i] == false) {

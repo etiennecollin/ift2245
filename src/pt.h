@@ -39,4 +39,6 @@ bool pt_valid_p(unsigned int page_number);
 
 int pt_find_page(unsigned int frame_number);
 
+int find_victim_frame_number();
+
 #endif

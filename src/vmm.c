@@ -71,9 +71,6 @@ void vmm_write(unsigned int laddress, char c) {
     unsigned int physical_address = get_physical_address(frame, page_offset);
     pm_write(page_number, c);
 
-    // update dirty bit
-    pt_set_readonly(page_number, false);
-
     vmm_log_command(stdout, "WRITING", laddress, page_number, frame, page_offset, physical_address, c);
 }
 
@@ -87,7 +84,7 @@ unsigned int get_physical_address(unsigned int frame, unsigned int page_offset) 
 
 int get_frame(unsigned int page_number, bool write) {
     int frame;
-    LOOKUP:
+
     // check if the page is in the TLB
     frame = tlb_lookup(page_number, write);
 
@@ -105,7 +102,7 @@ int get_frame(unsigned int page_number, bool write) {
                 int page = remove_page_from_tlb(frame);
 
                 // check if the page was in the TLB
-                if (page != -1) {
+                if (page == -1) {
                     // if not, find it in the page table
                     page = pt_find_page(frame);
                 }
@@ -120,16 +117,24 @@ int get_frame(unsigned int page_number, bool write) {
                 pt_unset_entry(page);
             }
 
-
             // download the page from the backing store
             pm_download_page(page_number, frame);
             // update the page table
             pt_set_entry(page_number, frame);
+            // update dirty bit
+            if (write) {
+                pt_set_readonly(page_number, false);
+            }
         }
         // add the page to the TLB
         tlb_add_entry(page_number, frame, pt_readonly_p(page_number));
-        goto LOOKUP;
+    } else {
+        // update dirty bit
+        if (write) {
+            pt_set_readonly(page_number, false);
+        }
     }
+
     return frame;
 }
 

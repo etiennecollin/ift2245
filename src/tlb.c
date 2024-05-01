@@ -34,13 +34,13 @@ void tlb_init(FILE *log) {
 /* Recherche dans le TLB.
  * Renvoie le 'frame_number', si trouvé, ou un nombre négatif sinon.  */
 static int tlb__lookup(unsigned int page_number, bool write) {
+    increment_counters();
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
         if (tlb_entries[i].frame_number >= 0 && tlb_entries[i].page_number == page_number) {
             // page found in TLB
-            increment_counters();
             tlb_entries[i].counter = 0;
-            if (tlb_entries[i].readonly) {
-                tlb_entries[i].readonly = !write;
+            if (tlb_entries[i].readonly && write) {
+                tlb_entries[i].readonly = false;
             }
             return tlb_entries[i].frame_number;
         }
@@ -76,8 +76,7 @@ static unsigned int get_least_recently_used() {
         }
     }
 
-    return
-            lru;
+    return lru;
 }
 
 /* Ajoute dans le TLB une entrée qui associe 'frame_number' à 'page_number'.  */
@@ -90,7 +89,7 @@ static void tlb__add_entry(unsigned int page_number, unsigned int frame_number, 
         }
     }
 
-    // find victim entry
+    // else find the least recently used entry
     if (victim == -1) {
         victim = get_least_recently_used();
     }

@@ -1,6 +1,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "pt.h"
 
@@ -64,6 +65,21 @@ int pt_find_page(unsigned int frame_number) {
 /* Change l'accès en écriture de 'page_number' selon 'readonly'.  */
 void pt_set_readonly(unsigned int page_number, bool readonly) {
     page_table[page_number].readonly = readonly;
+}
+
+
+int find_victim_frame_number() {
+    // the victim is the first frame of a page which is not readonly
+    // in the worst case, we will have to loop through all the pages
+    // we start at a random index to avoid always selecting the same page
+    for (int i = 0; i < NUM_PAGES; i++) {
+        int index = ((rand() % NUM_PAGES) + i) % NUM_PAGES;
+        if (page_table[index].valid && !page_table[index].readonly) {
+            return page_table[index].frame_number;
+        }
+    }
+    // all pages are readonly
+    return rand() % NUM_FRAMES;
 }
 
 /******************** ¡ NE RIEN CHANGER CI-DESSOUS !  ******************/
