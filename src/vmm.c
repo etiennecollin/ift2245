@@ -125,10 +125,10 @@ int get_frame(unsigned int page_number, bool write) {
             pm_download_page(page_number, frame);
             // update the page table
             pt_set_entry(page_number, frame);
-            goto LOOKUP;
         }
         // add the page to the TLB
         tlb_add_entry(page_number, frame, pt_readonly_p(page_number));
+        goto LOOKUP;
     }
     return frame;
 }

@@ -35,11 +35,13 @@ void tlb_init(FILE *log) {
  * Renvoie le 'frame_number', si trouvé, ou un nombre négatif sinon.  */
 static int tlb__lookup(unsigned int page_number, bool write) {
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
-        if (tlb_entries[i].page_number == page_number) {
+        if (tlb_entries[i].frame_number >= 0 && tlb_entries[i].page_number == page_number) {
             // page found in TLB
             increment_counters();
             tlb_entries[i].counter = 0;
-            tlb_entries[i].readonly = !write;
+            if (tlb_entries[i].readonly) {
+                tlb_entries[i].readonly = !write;
+            }
             return tlb_entries[i].frame_number;
         }
     }
@@ -56,22 +58,48 @@ void increment_counters() {
 
 static unsigned int get_least_recently_used() {
     int lru = 0;
+    bool lru_readonly = tlb_entries[lru].readonly;
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
-        if (tlb_entries[i].frame_number >= 0 && tlb_entries[i].counter > tlb_entries[lru].counter) {
-            lru = i;
+        // if the entry is valid and has a higher counter than the current LRU
+        if (tlb_entries[i].frame_number >= 0 && tlb_entries[i].counter >= tlb_entries[lru].counter) {
+            // if the entry has the same counter as the current LRU
+            if (tlb_entries[lru].counter == tlb_entries[i].counter) {
+                // if the current LRU is dirty and the new entry is not
+                if (!tlb_entries[lru].readonly && tlb_entries[i].readonly) {
+                    lru = i;
+                } else {
+                    continue;
+                }
+            } else {
+                lru = i;
+            }
         }
     }
-    return lru;
+
+    return
+            lru;
 }
 
 /* Ajoute dans le TLB une entrée qui associe 'frame_number' à 'page_number'.  */
 static void tlb__add_entry(unsigned int page_number, unsigned int frame_number, bool readonly) {
-    // find lru entry
-    unsigned int lru = get_least_recently_used();
-    tlb_entries[lru].page_number = page_number;
-    tlb_entries[lru].frame_number = frame_number;
-    tlb_entries[lru].counter = 0;
-    tlb_entries[lru].readonly = readonly; // TODO seed the random number generator at the start of the program
+    int victim = -1;
+    // check if there is an available entry
+    for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
+        if (tlb_entries[i].frame_number == -1) {
+            victim = i;
+        }
+    }
+
+    // find victim entry
+    if (victim == -1) {
+        victim = get_least_recently_used();
+    }
+
+    // add entry
+    tlb_entries[victim].page_number = page_number;
+    tlb_entries[victim].frame_number = frame_number;
+    tlb_entries[victim].counter = 0;
+    tlb_entries[victim].readonly = readonly; // TODO seed the random number generator at the start of the program
 }
 
 int remove_page_from_tlb(unsigned int frame) {
