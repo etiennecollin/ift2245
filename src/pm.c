@@ -12,7 +12,7 @@ static unsigned int download_count = 0;
 static unsigned int backup_count = 0;
 static unsigned int read_count = 0;
 static unsigned int write_count = 0;
-static unsigned int bitmap[NUM_FRAMES];
+static unsigned int bitmap[NUM_FRAMES] = {false};
 
 // Initialise la mémoire physique
 void pm_init(FILE *backing_store, FILE *log) {
@@ -24,12 +24,12 @@ void pm_init(FILE *backing_store, FILE *log) {
 
 int find_victim_frame_number() {
     // TODO: implement a replacement algorithm
-    int victim = rand() % NUM_FRAMES;
+    int victim = 2;
     return victim;
 }
 
 int find_free_frame_number() {
-    for (unsigned int i = 0; i < NUM_FRAMES; i += 1) {
+    for (int i = 0; i < NUM_FRAMES; i++) {
         if (bitmap[i] == false) {
             return i;
         }
@@ -45,6 +45,7 @@ void pm_download_page(unsigned int page_number, unsigned int frame_number) {
 
     unsigned int physical_addr = frame_number * PAGE_FRAME_SIZE;
     fread(pm_memory + physical_addr, PAGE_FRAME_SIZE, 1, pm_backing_store);
+    bitmap[frame_number] = true;
 }
 
 // Sauvegarde la frame spécifiée dans la page du backing store

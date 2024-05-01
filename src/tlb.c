@@ -99,7 +99,7 @@ static void tlb__add_entry(unsigned int page_number, unsigned int frame_number, 
     tlb_entries[victim].page_number = page_number;
     tlb_entries[victim].frame_number = frame_number;
     tlb_entries[victim].counter = 0;
-    tlb_entries[victim].readonly = readonly; // TODO seed the random number generator at the start of the program
+    tlb_entries[victim].readonly = readonly;
 }
 
 int remove_page_from_tlb(unsigned int frame) {
