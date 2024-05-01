@@ -18,6 +18,6 @@ void vmm_clean(void);
 
 unsigned int get_physical_address(unsigned int frame, unsigned int page_offset);
 
-int get_frame(unsigned int page_number);
+int get_frame(unsigned int page_number, bool write);
 
 #endif

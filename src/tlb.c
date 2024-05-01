@@ -12,6 +12,7 @@ struct tlb_entry {
     unsigned int page_number;
     int frame_number;             /* Invalide si négatif.  */
     bool readonly: 1;
+    unsigned int counter;
 };
 
 static FILE *tlb_log = NULL;
@@ -36,29 +37,41 @@ static int tlb__lookup(unsigned int page_number, bool write) {
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
         if (tlb_entries[i].page_number == page_number) {
             // page found in TLB
+            increment_counters();
+            tlb_entries[i].counter = 0;
+            tlb_entries[i].readonly = !write;
             return tlb_entries[i].frame_number;
         }
     }
     return -1; // page is not in TLB
 }
 
-/* Ajoute dans le TLB une entrée qui associe 'frame_number' à 'page_number'.  */
-// TODO : can we keep an attribute for TLB num of elements that tells us how many pages are in the TLB?
-static void tlb__add_entry(unsigned int page_number, unsigned int frame_number, bool readonly) {
+void increment_counters() {
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
-        if (tlb_entries[i].frame_number < 0) { // TLB empty slot found
-            tlb_entries[i].page_number = page_number;
-            tlb_entries[i].frame_number = frame_number;
-            tlb_entries[i].readonly = readonly;
-            return;
+        if (tlb_entries[i].frame_number >= 0) {
+            tlb_entries[i].counter++;
         }
     }
+}
 
-    // no empty slot found. Replacement algorithm must be used.
-    int victim = rand() % TLB_NUM_ENTRIES;
-    tlb_entries[victim].page_number = page_number;
-    tlb_entries[victim].frame_number = frame_number;
-    tlb_entries[victim].readonly = readonly; // TODO seed the random number generator at the start of the program
+static unsigned int get_least_recently_used() {
+    int lru = 0;
+    for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
+        if (tlb_entries[i].frame_number >= 0 && tlb_entries[i].counter > tlb_entries[lru].counter) {
+            lru = i;
+        }
+    }
+    return lru;
+}
+
+/* Ajoute dans le TLB une entrée qui associe 'frame_number' à 'page_number'.  */
+static void tlb__add_entry(unsigned int page_number, unsigned int frame_number, bool readonly) {
+    // find lru entry
+    unsigned int lru = get_least_recently_used();
+    tlb_entries[lru].page_number = page_number;
+    tlb_entries[lru].frame_number = frame_number;
+    tlb_entries[lru].counter = 0;
+    tlb_entries[lru].readonly = readonly; // TODO seed the random number generator at the start of the program
 }
 
 int remove_page_from_tlb(unsigned int frame) {

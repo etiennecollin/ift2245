@@ -21,4 +21,8 @@ void tlb_clean(void);
 
 int remove_page_from_tlb(unsigned int frame);
 
+static void increment_counters();
+
+static unsigned int get_least_recently_used();
+
 #endif

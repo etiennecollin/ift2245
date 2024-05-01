@@ -47,7 +47,7 @@ char vmm_read(unsigned int laddress) {
     unsigned int page_number = temp / PAGE_FRAME_SIZE; // get the last 24 bits of the address
 
     // get frame number
-    int frame = get_frame(page_number);
+    int frame = get_frame(page_number, false);
 
     // build physical address and read from it
     unsigned int physical_address = get_physical_address(frame, page_offset);
@@ -65,7 +65,7 @@ void vmm_write(unsigned int laddress, char c) {
     unsigned int page_number = temp / PAGE_FRAME_SIZE; // get the last 24 bits of the address
 
     // get frame number
-    int frame = get_frame(page_number);
+    int frame = get_frame(page_number, true);
 
     // build physical address
     unsigned int physical_address = get_physical_address(frame, page_offset);
@@ -85,17 +85,16 @@ unsigned int get_physical_address(unsigned int frame, unsigned int page_offset) 
     return physical_address;
 }
 
-int get_frame(unsigned int page_number) {
+int get_frame(unsigned int page_number, bool write) {
     int frame;
     LOOKUP:
     // check if the page is in the TLB
-    frame = tlb_lookup(page_number, false);
+    frame = tlb_lookup(page_number, write);
 
     // page is not in the TLB
     if (frame == -1) {
         // check if the page is in the page table
         frame = pt_lookup(page_number);
-
         // page fault
         if (frame == -1) {
             frame = find_free_frame_number();
