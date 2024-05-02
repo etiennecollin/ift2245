@@ -31,11 +31,10 @@ uint32_t cluster_to_lba(BPB *block, uint32_t cluster, uint32_t first_data_sector
 }
 
 uint32_t get_first_data_sector(BPB *block) {
-    //TODO use as_uint... functions
-    uint32_t root_dir_sectors = ((*(uint16_t *) block->BPB_RootEntCnt * 32) +
-                                 (*(uint16_t *) block->BPB_BytsPerSec - 1)) / *(uint16_t *) block->BPB_BytsPerSec;
-    uint32_t fat_table_sectors = block->BPB_NumFATs * *(uint32_t *) block->BPB_FATSz32;
-    uint32_t first_data_sector = *(uint16_t *) block->BPB_RsvdSecCnt + fat_table_sectors + root_dir_sectors;
+    uint32_t root_dir_sectors = ((as_uint16(block->BPB_RootEntCnt) * 32) +
+                                 (as_uint16(block->BPB_BytsPerSec) - 1)) / as_uint16(block->BPB_BytsPerSec);
+    uint32_t fat_table_sectors = block->BPB_NumFATs * as_uint32(block->BPB_FATSz32);
+    uint32_t first_data_sector = as_uint16(block->BPB_RsvdSecCnt) + fat_table_sectors + root_dir_sectors;
 
     return first_data_sector;
 }
@@ -51,11 +50,11 @@ uint32_t get_first_data_sector(BPB *block) {
  * @return un src d'erreur
  */
 error_code get_cluster_chain_value(BPB *block, uint32_t cluster, uint32_t *value, FILE *archive) {
-    uint32_t first_data_sector = get_first_data_sector(block);
-    uint32_t lba = cluster_to_lba(block, cluster, first_data_sector);
+    uint32_t fat_table = as_uint16(block->BPB_RsvdSecCnt) * block->BPB_SecPerClus * as_uint16(block->BPB_BytsPerSec);
+    uint32_t offset = fat_table + cluster * 4;
 
     // position cursor in the FAT table at the offset
-    if (fseek(archive, lba, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
+    if (fseek(archive, offset, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
         return GENERAL_ERR; // error positioning within the FAT file
     }
 
@@ -229,10 +228,65 @@ error_code read_boot_block(FILE *archive, BPB **block) {
  * @return un src d'erreur
  */
 error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry **entry) {
-    uint32_t root_sector = get_first_data_sector(block);
+    uint32_t root_cluster = as_uint32(block->BPB_RootClus);
+    long root_lba = cluster_to_lba(block, root_cluster, get_first_data_sector(block));
 
-    // iterate through the root directory to find the file descriptor
+    *entry = (FAT_entry *) malloc(sizeof(FAT_entry));
+    if (*entry == NULL) {
+        return GENERAL_ERR; // memory allocation error
+    }
 
+    // position cursor in the root directory
+    if (fseek(archive, root_lba, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
+        return GENERAL_ERR; // error positioning within the FAT file
+    }
+
+    // Initialize some variables
+    int i = 0;
+    int depth = 0;
+    char *name = NULL;
+    int status = break_up_path(path, depth, &name);
+    if (status == -1 || status == -3) {
+        return GENERAL_ERR;
+    }
+
+    while (true) {
+        if (fseek(archive, root_lba + i * 32, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
+            return GENERAL_ERR; // error positioning within the FAT file
+        }
+
+        // read the entry at the specified offset
+        if (fread(entry, sizeof(FAT_entry), 1, archive) != 1) {
+            return GENERAL_ERR; // error reading from the FAT
+        }
+
+        if (file_has_name(*entry, name)) {
+            depth++;
+            status = break_up_path(path, depth, &name);
+
+            // check if the path has been fully traversed
+            if (status == -2) {
+                break;
+            } else if (status < 0) {
+                return GENERAL_ERR;
+            }
+
+            // check if the entry is a directory
+            if (((*entry)->DIR_Attr & 0x10) != 0) {
+                i = 0;
+                root_cluster = (as_uint32((*entry)->DIR_FstClusHI) << 16) + as_uint32((*entry)->DIR_FstClusLO);
+                root_lba = cluster_to_lba(block, root_cluster, get_first_data_sector(block));
+            } else {
+                // the entry is a file but the path has not been fully traversed
+                return GENERAL_ERR;
+            }
+        } else {
+            // check if the entry is the last entry in the root directory
+            if ((*entry)->DIR_Name[0] == 0x00) {
+                return GENERAL_ERR;
+            }
+        }
+    }
 
     return 0;
 }
@@ -254,8 +308,8 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
 // ༽つ۞﹏۞༼つ
 
 int main() {
-    char *path = "./////a/../b/c";
-    uint8_t level = 1;
+    char *path = "/";
+    uint8_t level = 0;
     char *output = NULL;
     break_up_path(path, level, &output);
     printf("%s\n", output);
