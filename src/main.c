@@ -257,9 +257,10 @@ error_code read_boot_block(FILE *archive, BPB **block) {
  */
 error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry **entry) {
     uint32_t root_cluster = as_uint32(block->BPB_RootClus);
-    long root_lba = cluster_to_lba(block, root_cluster, get_first_data_sector(block));
+    long root_lba =
+            cluster_to_lba(block, root_cluster, get_first_data_sector(block)) * as_uint16(block->BPB_BytsPerSec);
 
-    *entry = malloc(sizeof(FAT_entry));;
+    *entry = (FAT_entry *) malloc(sizeof(FAT_entry));
     if (*entry == NULL) {
         return GENERAL_ERR; // memory allocation error
     }
@@ -298,12 +299,14 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
             if (((*entry)->DIR_Attr & 0x10) != 0) {
                 i = 0;
                 root_cluster = (as_uint32((*entry)->DIR_FstClusHI) << 16) + as_uint32((*entry)->DIR_FstClusLO);
-                root_lba = cluster_to_lba(block, root_cluster, get_first_data_sector(block));
+                root_lba = cluster_to_lba(block, root_cluster, get_first_data_sector(block)) *
+                           as_uint16(block->BPB_BytsPerSec);
             } else {
                 // the entry is a file but the path has not been fully traversed
                 return GENERAL_ERR;
             }
         } else {
+            i++;
             // check if the entry is the last entry in the root directory
             if ((*entry)->DIR_Name[0] == 0x00) {
                 return GENERAL_ERR;
@@ -421,13 +424,13 @@ int main() {
     printf("File Descriptor 2: %d\n", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
 
     e = NULL;
-    printf("File Descriptor 3: %d\n", find_file_descriptor(archive, bpb,  "afolder/another/candide.txt", &e) >= 0);
+    printf("File Descriptor 3: %d\n", find_file_descriptor(archive, bpb, "afolder/another/candide.txt", &e) >= 0);
 
     e = NULL;
     printf("File Descriptor 4: %d\n", find_file_descriptor(archive, bpb, "afolder/los.txt", &e) < 0);
 
     e = NULL;
-    printf("File Descriptor 5: %d\n", find_file_descriptor(archive, bpb, "afolder/spansih/titan.txt", &e) < 0 );
+    printf("File Descriptor 5: %d\n", find_file_descriptor(archive, bpb, "afolder/spansih/titan.txt", &e) < 0);
 
     free(e);
 
