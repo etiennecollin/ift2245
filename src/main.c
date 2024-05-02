@@ -345,8 +345,8 @@ error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, si
 
         // read cluster into buffer
         fseek(archive, lba, SEEK_SET);
-        fread(buff, block->BPB_SecPerClus * block->BPB_BytsPerSec, 1, archive);
-        bytes_read += block->BPB_SecPerClus * block->BPB_BytsPerSec;
+        fread(buff, block->BPB_SecPerClus * as_uint16(block->BPB_BytsPerSec), 1, archive);
+        bytes_read += block->BPB_SecPerClus * as_uint16(block->BPB_BytsPerSec);
 
         // find next cluster to read
         get_cluster_chain_value(block, cluster, value, archive);
