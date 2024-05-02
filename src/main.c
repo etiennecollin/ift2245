@@ -328,31 +328,40 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
  * @return un src d'erreur qui va contenir la longueur des donnés lues
  */
 error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_len) {
+    int cluster_size = block->BPB_SecPerClus * as_uint16(block->BPB_BytsPerSec);
+    uint32_t cluster = (as_uint32(entry->DIR_FstClusHI) << 16) + as_uint32(entry->DIR_FstClusLO);
 
-    uint32_t *value;
-    bool not_end_of_file = true;
-    error_code bytes_read = 0;
-    uint32_t cluster =
-            (as_uint32((*entry).DIR_FstClusHI) << 16) + as_uint32((*entry).DIR_FstClusLO); // first cluster to be read
-    *value = cluster;
 
-    while (not_end_of_file) {
+    uint32_t value = cluster;
+    int bytes_read = 0;
+    bool done = false;
+
+    while (!done) {
         if (bytes_read > max_len) {
             return -3; // buffer overflow
         }
 
-        uint32_t lba = cluster_to_lba(block, *value, get_first_data_sector(block));
+        // calculate the LBA of the cluster
+        long lba = cluster_to_lba(block, value, get_first_data_sector(block)) * as_uint16(block->BPB_BytsPerSec);
 
         // read cluster into buffer
-        fseek(archive, lba, SEEK_SET);
-        fread(buff, block->BPB_SecPerClus * as_uint16(block->BPB_BytsPerSec), 1, archive);
-        bytes_read += block->BPB_SecPerClus * as_uint16(block->BPB_BytsPerSec);
+        if (fseek(archive, lba, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
+            return GENERAL_ERR; // error positioning within the FAT file
+        }
+
+        // read the cluster at the specified offset
+        if (fread(buff + bytes_read, cluster_size, 1, archive) != 1) {
+            return GENERAL_ERR; // error reading from the FAT
+        }
+
+        // update the number of bytes read
+        bytes_read += cluster_size;
 
         // find next cluster to read
-        get_cluster_chain_value(block, cluster, value, archive);
+        get_cluster_chain_value(block, cluster, &value, archive);
 
-        if (*value == 0xFFFFFF8) { // end of file has been reached
-            not_end_of_file = false;
+        if (value == 0xFFFFFF8) { // end of file has been reached
+            done = true;
         }
     }
 
@@ -468,16 +477,15 @@ int main() {
     e = NULL;
     char *hello = "Bonne chance pour le TP4!\n";
     char *content_read = (char *) malloc(sizeof(char) * 1001);
-
     memset(content_read, '\0', 1001);
     printf("Read 1a: %d\n", find_file_descriptor(archive, bpb, "hello.txt", &e) >= 0);
     read_file(archive, bpb, e, content_read, 1000);
     printf("Read 1b: %d\n", 0 == strcmpi(hello, content_read));
+    printf("%s\n", content_read);
 
     e = NULL;
     char *zola = "The Project Gutenberg eBook, Zola, by Émile Faguet\n\n\nThis eBook is for the use of anyone anywhere at no cost and with\nalmost no restrictions whatsoever.  You may copy it, give it away or\nre-use it under the terms of the Project Gutenberg License included\nwith this eBook or online at www.gutenberg.org\n\n\n\n\n\nTitle: Zola\n\n\nAuthor: Émile Faguet\n\n\n\nRelease Date: June 5, 2008  [eBook #25704]\n\nLanguage: French\n\n\n***START OF THE PROJECT GUTENBERG EBOOK ZOLA***\n\n\nE-text prepared by Gerard Arthus, Rénald Lévesque, and the Project\nGutenberg Online Distributed Proofreading Team (http://www.pgdp.net)\n\n\n\nZOLA\n\nPar\n\nEMILE FAGUET\nde l'Académie Française\nProfesseur à la Sorbonne\n\n\n\n\n\n\nPrix: 10¢\n\n\n\n\nÉmile Zola\n\n\nJe ne m'occuperai ici, strictement, que de l'oeuvre littéraire de\nl'écrivain célèbre qui vient de mourir.\n\nÉmile Zola a eu une carrière littéraire de quarante années environ, ses\ndébuts remontant à 1863 et sa fin tragique et prématurée étant\nsurvenue,--alors qu'il écrivait ";
     memset(content_read, '\0', 1001);
-
     printf("Read 2a: %d\n", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
     read_file(archive, bpb, e, content_read, 1000);
     printf("Read 2b: %d\n", 0 == strcmpi(zola, content_read));
