@@ -78,30 +78,51 @@ error_code get_cluster_chain_value(BPB *block, uint32_t cluster, uint32_t *value
  * @return 0 ou 1 (faux ou vrai)
  */
 bool file_has_name(FAT_entry *entry, char *name) {
-    char filename[9]; // holds the filename (8 char) and the null terminator (1 char)
-    strncpy(filename, entry->DIR_Name, 8);
-    filename[8] = '\0'; // filename is null terminated
+    // check if the entry is a directory
+    if ((entry->DIR_Attr & 0x10) != 0) {
+        char dirname[12]; // holds the dirname (11 char) and the null terminator (1 char)
+        strncpy(dirname, entry->DIR_Name, 11);
+        dirname[12] = '\0'; // dirname is null terminated
 
-    // Scan the filename for spaces and replace them with null
-    // characters until the first character that is not a space
-    // is found. This is done to remove trailing spaces.
-    for (int i = 7; i >= 0; i--) {
-        if (filename[i] == ' ') {
-            filename[i] = '\0';
-        } else {
-            break;
+        // Scan the dirname for spaces and replace them with null
+        // characters until the first character that is not a space
+        // is found. This is done to remove trailing spaces.
+        for (int i = 11; i >= 0; i--) {
+            if (dirname[i] == ' ') {
+                dirname[i] = '\0';
+            } else {
+                break;
+            }
         }
+
+        return strcasecmp(dirname, name) == 0;
+
+    } else {
+        char filename[9]; // holds the filename (8 char) and the null terminator (1 char)
+        strncpy(filename, entry->DIR_Name, 8);
+        filename[8] = '\0'; // filename is null terminated
+
+        // Scan the filename for spaces and replace them with null
+        // characters until the first character that is not a space
+        // is found. This is done to remove trailing spaces.
+        for (int i = 7; i >= 0; i--) {
+            if (filename[i] == ' ') {
+                filename[i] = '\0';
+            } else {
+                break;
+            }
+        }
+
+        char extension[4]; // holds the extension (8 char) and the null terminator (1 char)
+        strncpy(extension, entry->DIR_Name + 8, 3);
+        extension[3] = '\0';
+
+        char full_name[13]; // filename => 8 char; "." => 1 char; extension => 3 char; null terminator => 1 char; 8 + 1 + 3 + 1 = 13
+        snprintf(full_name, sizeof(full_name), "%s.%s", filename, extension);
+
+        // strcasecmp returns 0 iff both strings are the same. strcasecmp is not case-sensitive
+        return strcasecmp(full_name, name) == 0;
     }
-
-    char extension[4]; // holds the extension (8 char) and the null terminator (1 char)
-    strncpy(extension, entry->DIR_Name + 8, 3);
-    extension[3] = '\0';
-
-    char full_name[13]; // filename => 8 char; "." => 1 char; extension => 3 char; null terminator => 1 char; 8 + 1 + 3 + 1 = 13
-    snprintf(full_name, sizeof(full_name), "%s.%s", filename, extension);
-
-    // strcasecmp returns 0 iff both strings are the same. strcasecmp is not case-sensitive
-    return strcasecmp(full_name, name) == 0;
 }
 
 /**
