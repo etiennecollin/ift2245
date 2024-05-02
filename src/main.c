@@ -16,6 +16,8 @@ uint8_t ilog2(uint32_t n) {
 //                                           DEBUT DU CODE
 //--------------------------------------------------------------------------------------------------------
 
+#define fiffnnull(e) do {if(NULL != (e)) free(e);} while(0)
+
 /**
  * Exercice 1
  *
@@ -124,6 +126,93 @@ bool file_has_name(FAT_entry *entry, char *name) {
     return strcasecmp(clean_entry_name, name) == 0;
 }
 
+static void free_stack(char **stack, unsigned long allocated_size) {
+    for (int i = 0; i < allocated_size; i++) {
+        fiffnnull(stack[i]);
+    }
+    fiffnnull(stack);
+}
+
+int get_simplified_path(char *path, char ***output_stack) {
+    unsigned long path_len = strlen(path);
+    unsigned long allocated_size = path_len + 1;
+    int stackIndex = 0;
+
+    // Stack of strings to store directories
+    *output_stack = (char **) malloc(allocated_size * sizeof(char *));
+    if (*output_stack == NULL) {
+        return -1;
+    }
+
+    // Allocate memory for each string in the stack
+    for (int i = 0; i < allocated_size; i++) {
+        (*output_stack)[i] = (char *) malloc(allocated_size * sizeof(char));
+        if ((*output_stack)[i] == NULL) {
+            free_stack(*output_stack, allocated_size);
+            return -1;
+        }
+    }
+
+    // Create temporary string to create the current string
+    char *temp = (char *) malloc(allocated_size * sizeof(char));
+    if (temp == NULL) {
+        free_stack(*output_stack, allocated_size);
+        return -1;
+    }
+
+    // Traverse the path string
+    int i = 0;
+    while (i < path_len) {
+        // Handle multiple slashes by skipping additional slashes
+        if (path[i] == '/') {
+            while (i < path_len && path[i] == '/') {
+                i++;
+            }
+        }
+            // Handle "." (current directory) by ignoring it
+        else if (path[i] == '.' && (i + 1 == path_len || path[i + 1] == '/')) {
+            i += 2;
+        }
+            // Handle ".." (parent directory) by popping from the stack
+        else if (path[i] == '.' && i + 1 < path_len && path[i + 1] == '.' &&
+                 (i + 2 == path_len || path[i + 2] == '/')) {
+            i += 3;
+            if (stackIndex > 0) {
+                stackIndex--;
+            } else {
+                free_stack(*output_stack, allocated_size);
+                free(temp);
+                return -2;
+            }
+        }
+            // A character is found
+        else {
+            // Create string by iterating over the characters until the next '/'
+            int j = 0;
+            while (i < path_len && path[i] != '/') {
+                temp[j] = path[i];
+                i++;
+                j++;
+            }
+
+            // Null-terminate the string
+            temp[j] = '\0';
+
+            //Copy the directory to the stack
+            strcpy((*output_stack)[stackIndex], temp);
+
+            // Update the stack index
+            stackIndex++;
+        }
+    }
+
+    // If the stack is not full, add a null terminator
+    fiffnnull((*output_stack)[stackIndex]);
+    (*output_stack)[stackIndex] = NULL;
+    free(temp);
+    return 0;
+}
+
 /**
  * Exercice 4
  *
@@ -140,68 +229,37 @@ error_code break_up_path(char *path, uint8_t level, char **output) {
         return -1; // invalid arguments
     }
 
-    int level_counter = 0;
-
-    // find the position of the beginning of the part of the path
-    char *ptr = path;
-
-    if (*ptr == '.' && *(ptr + 1) == '.' && *(ptr + 2) == '/') {
-        return -1; // invalid arguments
+    // simplify the path
+    char **simplified_stack = NULL;
+    int status = get_simplified_path(path, &simplified_stack);
+    unsigned long allocated_size = strlen(path) + 1;
+    if (status == -1) {
+        return -3;
+    } else if (status == -2) {
+        return -1;
     }
 
-    // case where the path starts with '/'. Must not be counted.
-    if (*ptr == '/' || *ptr == '.') {
-        ptr++;
-    }
-    while (*ptr == '/') { // skip consecutive '/'
-        ptr++;
+    // Check length of the simplified stack
+    int stack_length = 0;
+    while (simplified_stack[stack_length] != NULL) {
+        stack_length++;
     }
 
-    // initialize the start pointer to the beginning of the path
-    char *start_ptr = ptr;
-
-    // iterate through the path to find the part of the path
-    while (*ptr != '\0' && level_counter <= level) {
-        if (*ptr == '/') {
-            level_counter++;
-            if (level_counter == level + 1) {
-                break;
-            }
-
-            while (*ptr == '/') { // skip consecutive '/'
-                ptr++;
-            }
-            start_ptr = ptr;
-        } else if (*(ptr - 1) == '/' && *ptr == '.') {
-            if (*(ptr + 1) == '/') {
-                ptr += 2;
-                start_ptr = ptr;
-            } else if (*(ptr + 1) == '.' && *(ptr + 2) == '/') {
-                level_counter--;
-                ptr += 3;
-            }
-        } else {
-            ptr++;
-        }
+    // Check if the level is valid
+    if (level >= stack_length) {
+        free_stack(simplified_stack, allocated_size);
+        return -2;
     }
 
-    // check whether the level is within bounds
-    if (level > level_counter) {
-        return -2; // not enough levels in the path
-    }
 
-    // find the end of the part of the path
-    long length = ptr - start_ptr;
-
-    // allocate memory
-    *output = (char *) malloc(length + 1);
+    // Copy the string to the output
+    char *output_string = simplified_stack[level];
+    *output = (char *) malloc((strlen(output_string) + 1) * sizeof(char));
     if (*output == NULL) {
-        return -3; // memory allocation error
+        free_stack(simplified_stack, allocated_size);
+        return -3;
     }
-
-    // copy the substring into the output string
-    memcpy(*output, start_ptr, length);
-    (*output)[length] = '\0'; // add null terminator
+    strcpy(*output, output_string);
 
     // convert the output string to uppercase
     // https://www.tutorialspoint.com/convert-a-string-to-uppercase-in-c
@@ -211,6 +269,7 @@ error_code break_up_path(char *path, uint8_t level, char **output) {
         }
     }
 
+    free_stack(simplified_stack, allocated_size);
     return NO_ERR; // include the null character
 }
 
@@ -286,6 +345,7 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
 
         if (file_has_name(*entry, name)) {
             depth++;
+            free(name);
             status = break_up_path(path, depth, &name);
 
             // check if the path has been fully traversed
@@ -302,6 +362,9 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
                 root_lba = cluster_to_lba(block, root_cluster, get_first_data_sector(block)) *
                            as_uint16(block->BPB_BytsPerSec);
             } else {
+                if (name != NULL) {
+                    free(name);
+                }
                 // the entry is a file but the path has not been fully traversed
                 return GENERAL_ERR;
             }
@@ -309,6 +372,7 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
             i++;
             // check if the entry is the last entry in the root directory
             if ((*entry)->DIR_Name[0] == 0x00) {
+                free(name);
                 return GENERAL_ERR;
             }
         }
@@ -417,20 +481,28 @@ int main() {
     char *read = NULL;
     break_up_path(path, 0, &read);
     printf("Path 1: %d, %s\n", strcasecmp(read, "FIRST") == 0, read);
+    fiffnnull(read);
 
     read = NULL;
     break_up_path(path, 1, &read);
     printf("Path 3: %d, %s\n", strcasecmp(read, "SECOND") == 0, read);
+    fiffnnull(read);
 
     read = NULL;
     break_up_path(path, 2, &read);
     printf("Path 4: %d, %s\n", strcasecmp(read, "THIRD") == 0, read);
+    fiffnnull(read);
 
     read = NULL;
     break_up_path(path, 3, &read);
     printf("Path 5: %d, %s\n", strcasecmp(read, "FOURTH") == 0, read);
+    fiffnnull(read);
 
-    free(read);
+    read = NULL;
+    path = "first/../second/third/fourth/";
+    break_up_path(path, 0, &read);
+    printf("Path 6: %d, %s\n", strcasecmp(read, "SECOND") == 0, read);
+    fiffnnull(read);
 
     // ====================================================================================================
 
@@ -440,18 +512,24 @@ int main() {
 
     FAT_entry *e = NULL;
     printf("File Descriptor 1: %d\n", find_file_descriptor(archive, bpb, "notexist", &e) < 0);
+    fiffnnull(e);
 
     e = NULL;
     printf("File Descriptor 2: %d\n", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
+    fiffnnull(e);
 
     e = NULL;
     printf("File Descriptor 3: %d\n", find_file_descriptor(archive, bpb, "afolder/another/candide.txt", &e) >= 0);
+    fiffnnull(e);
 
     e = NULL;
     printf("File Descriptor 4: %d\n", find_file_descriptor(archive, bpb, "afolder/los.txt", &e) < 0);
+    fiffnnull(e);
 
     e = NULL;
     printf("File Descriptor 5: %d\n", find_file_descriptor(archive, bpb, "afolder/spansih/titan.txt", &e) < 0);
+    fiffnnull(e);
+    fiffnnull(bpb);
 
     // ====================================================================================================
 
@@ -465,6 +543,7 @@ int main() {
     printf("Read 1a: %d\n", find_file_descriptor(archive, bpb, "hello.txt", &e) >= 0);
     int bytes_read = read_file(archive, bpb, e, content_read, 1000);
     printf("Read 1b: %d\n", 0 == strcasecmp(hello, content_read));
+    fiffnnull(e);
 
     e = NULL;
     char *zola = "The Project Gutenberg eBook, Zola, by Émile Faguet\n\n\nThis eBook is for the use of anyone anywhere at no cost and with\nalmost no restrictions whatsoever.  You may copy it, give it away or\nre-use it under the terms of the Project Gutenberg License included\nwith this eBook or online at www.gutenberg.org\n\n\n\n\n\nTitle: Zola\n\n\nAuthor: Émile Faguet\n\n\n\nRelease Date: June 5, 2008  [eBook #25704]\n\nLanguage: French\n\n\n***START OF THE PROJECT GUTENBERG EBOOK ZOLA***\n\n\nE-text prepared by Gerard Arthus, Rénald Lévesque, and the Project\nGutenberg Online Distributed Proofreading Team (http://www.pgdp.net)\n\n\n\nZOLA\n\nPar\n\nEMILE FAGUET\nde l'Académie Française\nProfesseur à la Sorbonne\n\n\n\n\n\n\nPrix: 10¢\n\n\n\n\nÉmile Zola\n\n\nJe ne m'occuperai ici, strictement, que de l'oeuvre littéraire de\nl'écrivain célèbre qui vient de mourir.\n\nÉmile Zola a eu une carrière littéraire de quarante années environ, ses\ndébuts remontant à 1863 et sa fin tragique et prématurée étant\nsurvenue,--alors qu'il écrivait ";
@@ -472,6 +551,7 @@ int main() {
     printf("Read 2a: %d\n", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
     bytes_read = read_file(archive, bpb, e, content_read, 1000);
     printf("Read 2b: %d\n", 0 == strcasecmp(zola, content_read));
+    fiffnnull(e);
 
     e = NULL;
     char *los = "The Project Gutenberg EBook of Los exploradores españoles del siglo XVI, by \nCharles F. Lummis\n\nThis eBook is for the use of anyone anywhere at no cost and with\nalmost no restrictions whatsoever.  You may copy it, give it away or\nre-use it under the terms of the Project Gutenberg License included\nwith this eBook or online at www.gutenberg.org/license\n\n\nTitle: Los exploradores españoles del siglo XVI\n\nAuthor: Charles F. Lummis\n\nTranslator: Arturo Cuyás\n\nRelease Date: April 2, 2020 [EBook #61739]\n\nLanguage: Spanish\n\n\n*** START OF THIS PROJECT GUTENBERG EBOOK LOS EXPLORADORES ESPAÑOLES ***\n\n\n\n\nProduced by Adrian Mastronardi and the Online Distributed\nProofreading Team at https://www.pgdp.net (This file was\nproduced from images generously made available by The\nInternet Archive/American Libraries.)\n\n\n\n\n\n\n[Illustration: CHARLES F. LUMMIS]\n\n  Los\n  Exploradores españoles\n  del Siglo XVI\n\n  VINDICACIÓN DE LA ACCIÓN COLONIZADORA\n  ESPAÑOLA EN AMÉRICA\n\n  OBRA ESCRITA EN INGLÉS POR\n\n  C";
@@ -479,8 +559,12 @@ int main() {
     printf("Read 3a: %d\n", find_file_descriptor(archive, bpb, "spanish/los.txt", &e) >= 0);
     bytes_read = read_file(archive, bpb, e, content_read, 1000);
     printf("Read 3b: %d\n", 0 == strcasecmp(los, content_read));
+    fiffnnull(e);
 
-    free(e);
+    fiffnnull(content_read);
+    fiffnnull(bpb);
+    fclose(archive);
+
 }
 
 // ༽つ۞﹏۞༼つ
