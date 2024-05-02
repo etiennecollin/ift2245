@@ -317,6 +317,10 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
     return 0;
 }
 
+static size_t min(size_t a, size_t b) {
+    return a < b ? a : b;
+}
+
 /**
  * Exercice 7
  *
@@ -333,12 +337,12 @@ error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, si
 
 
     uint32_t cluster_prev;
-    int bytes_read = 0;
+    size_t bytes_read = 0;
     bool done = false;
 
     while (!done) {
-        if (bytes_read > max_len) {
-            return -3; // buffer overflow
+        if (bytes_read >= max_len) {
+            return bytes_read;
         }
 
         // calculate the LBA of the cluster_prev
@@ -350,18 +354,19 @@ error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, si
         }
 
         // read the cluster_prev at the specified offset
-        if (fread(buff + bytes_read, cluster_size, 1, archive) != 1) {
+        size_t to_read = min(cluster_size, max_len - bytes_read);
+        if (fread(buff + bytes_read, to_read, 1, archive) != 1) {
             return GENERAL_ERR; // error reading from the FAT
         }
 
         // update the number of bytes read
-        bytes_read += cluster_size;
+        bytes_read += to_read;
 
         // find next cluster_prev to read
         cluster_prev = cluster_current;
         get_cluster_chain_value(block, cluster_prev, &cluster_current, archive);
 
-        if (cluster_current == 0xFFFFFF8) { // end of file has been reached
+        if (cluster_current >= 0xFFFFFF8) { // end of file has been reached
             done = true;
         }
     }
@@ -372,6 +377,8 @@ error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, si
 // ༽つ۞﹏۞༼つ
 
 int main() {
+    // ====================================================================================================
+
     FAT_entry entry;
     entry.DIR_Name[0] = 65;
     entry.DIR_Name[1] = 78;
@@ -404,25 +411,28 @@ int main() {
     printf("Name 2a: %d\n", !file_has_name(&entry, "ANAME"));
     printf("Name 2b: %d\n", file_has_name(&entry, "ANAME.AAA"));
 
+    // ====================================================================================================
 
     char *path = "first/second/third/fourth";
     char *read = NULL;
     break_up_path(path, 0, &read);
-    printf("Path 1: %d, %s\n", strcasecmp(read, "FIRST"), read);
+    printf("Path 1: %d, %s\n", strcasecmp(read, "FIRST") == 0, read);
 
     read = NULL;
     break_up_path(path, 1, &read);
-    printf("Path 3: %d, %s\n", strcasecmp(read, "SECOND"), read);
+    printf("Path 3: %d, %s\n", strcasecmp(read, "SECOND") == 0, read);
 
     read = NULL;
     break_up_path(path, 2, &read);
-    printf("Path 4: %d, %s\n", strcasecmp(read, "THIRD"), read);
+    printf("Path 4: %d, %s\n", strcasecmp(read, "THIRD") == 0, read);
 
     read = NULL;
     break_up_path(path, 3, &read);
-    printf("Path 5: %d, %s\n", strcasecmp(read, "FOURTH"), read);
+    printf("Path 5: %d, %s\n", strcasecmp(read, "FOURTH") == 0, read);
 
     free(read);
+
+    // ====================================================================================================
 
     FILE *archive = fopen("../floppy.img", "rb");
     BPB *bpb = NULL;
@@ -444,8 +454,6 @@ int main() {
     printf("File Descriptor 5: %d\n", find_file_descriptor(archive, bpb, "afolder/spansih/titan.txt", &e) < 0);
 
     // ====================================================================================================
-    // =================================== TESTS UNITAIRES ===============================================
-    // ====================================================================================================
 
     bpb = NULL;
     read_boot_block(archive, &bpb);
@@ -455,21 +463,21 @@ int main() {
     char *content_read = (char *) malloc(sizeof(char) * 1001);
     memset(content_read, '\0', 1001);
     printf("Read 1a: %d\n", find_file_descriptor(archive, bpb, "hello.txt", &e) >= 0);
-    read_file(archive, bpb, e, content_read, 1000);
+    int bytes_read = read_file(archive, bpb, e, content_read, 1000);
     printf("Read 1b: %d\n", 0 == strcasecmp(hello, content_read));
 
     e = NULL;
     char *zola = "The Project Gutenberg eBook, Zola, by Émile Faguet\n\n\nThis eBook is for the use of anyone anywhere at no cost and with\nalmost no restrictions whatsoever.  You may copy it, give it away or\nre-use it under the terms of the Project Gutenberg License included\nwith this eBook or online at www.gutenberg.org\n\n\n\n\n\nTitle: Zola\n\n\nAuthor: Émile Faguet\n\n\n\nRelease Date: June 5, 2008  [eBook #25704]\n\nLanguage: French\n\n\n***START OF THE PROJECT GUTENBERG EBOOK ZOLA***\n\n\nE-text prepared by Gerard Arthus, Rénald Lévesque, and the Project\nGutenberg Online Distributed Proofreading Team (http://www.pgdp.net)\n\n\n\nZOLA\n\nPar\n\nEMILE FAGUET\nde l'Académie Française\nProfesseur à la Sorbonne\n\n\n\n\n\n\nPrix: 10¢\n\n\n\n\nÉmile Zola\n\n\nJe ne m'occuperai ici, strictement, que de l'oeuvre littéraire de\nl'écrivain célèbre qui vient de mourir.\n\nÉmile Zola a eu une carrière littéraire de quarante années environ, ses\ndébuts remontant à 1863 et sa fin tragique et prématurée étant\nsurvenue,--alors qu'il écrivait ";
     memset(content_read, '\0', 1001);
     printf("Read 2a: %d\n", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
-    read_file(archive, bpb, e, content_read, 1000);
+    bytes_read = read_file(archive, bpb, e, content_read, 1000);
     printf("Read 2b: %d\n", 0 == strcasecmp(zola, content_read));
 
     e = NULL;
     char *los = "The Project Gutenberg EBook of Los exploradores españoles del siglo XVI, by \nCharles F. Lummis\n\nThis eBook is for the use of anyone anywhere at no cost and with\nalmost no restrictions whatsoever.  You may copy it, give it away or\nre-use it under the terms of the Project Gutenberg License included\nwith this eBook or online at www.gutenberg.org/license\n\n\nTitle: Los exploradores españoles del siglo XVI\n\nAuthor: Charles F. Lummis\n\nTranslator: Arturo Cuyás\n\nRelease Date: April 2, 2020 [EBook #61739]\n\nLanguage: Spanish\n\n\n*** START OF THIS PROJECT GUTENBERG EBOOK LOS EXPLORADORES ESPAÑOLES ***\n\n\n\n\nProduced by Adrian Mastronardi and the Online Distributed\nProofreading Team at https://www.pgdp.net (This file was\nproduced from images generously made available by The\nInternet Archive/American Libraries.)\n\n\n\n\n\n\n[Illustration: CHARLES F. LUMMIS]\n\n  Los\n  Exploradores españoles\n  del Siglo XVI\n\n  VINDICACIÓN DE LA ACCIÓN COLONIZADORA\n  ESPAÑOLA EN AMÉRICA\n\n  OBRA ESCRITA EN INGLÉS POR\n\n  C";
     memset(content_read, '\0', 1001);
     printf("Read 3a: %d\n", find_file_descriptor(archive, bpb, "spanish/los.txt", &e) >= 0);
-    read_file(archive, bpb, e, content_read, 1000);
+    bytes_read = read_file(archive, bpb, e, content_read, 1000);
     printf("Read 3b: %d\n", 0 == strcasecmp(los, content_read));
 
     free(e);
