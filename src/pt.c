@@ -32,6 +32,19 @@ static int pt__lookup(unsigned int page_number) {
     return -1;
 }
 
+
+void pt_update_counters(unsigned int page_number) {
+    // Increment the counter of all pages
+    for (int i = 0; i < NUM_PAGES; i++) {
+        if (page_table[i].valid) {
+            page_table[i].counter++;
+        }
+    }
+
+    // Reset the counter of the page that was accessed
+    page_table[page_number].counter = 0;
+}
+
 /* Modifie l'entrée de 'page_number' dans la page table pour qu'elle pointe vers 'frame_number'.  */
 static void pt__set_entry(unsigned int page_number, unsigned int frame_number) {
     page_table[page_number].valid = true;

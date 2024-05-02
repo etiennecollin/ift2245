@@ -42,4 +42,6 @@ int pt_find_page(unsigned int frame_number);
 
 int find_victim_frame_number();
 
+void pt_update_counters(unsigned int page_number);
+
 #endif
