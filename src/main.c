@@ -32,8 +32,8 @@ uint32_t cluster_to_lba(BPB *block, uint32_t cluster, uint32_t first_data_sector
 }
 
 uint32_t get_first_data_sector(BPB *block) {
-    uint32_t root_dir_sectors = ((as_uint16(block->BPB_RootEntCnt) * 32) +
-                                 (as_uint16(block->BPB_BytsPerSec) - 1)) / as_uint16(block->BPB_BytsPerSec);
+    uint32_t root_dir_sectors = ((as_uint16(block->BPB_RootEntCnt) * 32) + (as_uint16(block->BPB_BytsPerSec) - 1)) /
+                                as_uint16(block->BPB_BytsPerSec);
     uint32_t fat_table_sectors = block->BPB_NumFATs * as_uint32(block->BPB_FATSz32);
     uint32_t first_data_sector = as_uint16(block->BPB_RsvdSecCnt) + fat_table_sectors + root_dir_sectors;
 
@@ -299,7 +299,7 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
             // check if the entry is a directory
             if (((*entry)->DIR_Attr & 0x10) != 0) {
                 i = 0;
-                root_cluster = (as_uint32((*entry)->DIR_FstClusHI) << 16) + as_uint32((*entry)->DIR_FstClusLO);
+                root_cluster = (as_uint16((*entry)->DIR_FstClusHI) << 16) + as_uint16((*entry)->DIR_FstClusLO);
                 root_lba = cluster_to_lba(block, root_cluster, get_first_data_sector(block)) *
                            as_uint16(block->BPB_BytsPerSec);
             } else {
@@ -329,10 +329,11 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
  */
 error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_len) {
     int cluster_size = block->BPB_SecPerClus * as_uint16(block->BPB_BytsPerSec);
-    uint32_t cluster = (as_uint32(entry->DIR_FstClusHI) << 16) + as_uint32(entry->DIR_FstClusLO);
+    uint32_t cluster_current = (as_uint16(entry->DIR_FstClusHI) << 16) + as_uint16(entry->DIR_FstClusLO);
+    uint32_t first_data_sector = get_first_data_sector(block);
 
 
-    uint32_t value = cluster;
+    uint32_t cluster_prev;
     int bytes_read = 0;
     bool done = false;
 
@@ -341,15 +342,15 @@ error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, si
             return -3; // buffer overflow
         }
 
-        // calculate the LBA of the cluster
-        long lba = cluster_to_lba(block, value, get_first_data_sector(block)) * as_uint16(block->BPB_BytsPerSec);
+        // calculate the LBA of the cluster_prev
+        long lba = cluster_to_lba(block, cluster_current, first_data_sector) * as_uint16(block->BPB_BytsPerSec);
 
-        // read cluster into buffer
+        // read cluster_prev into buffer
         if (fseek(archive, lba, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
             return GENERAL_ERR; // error positioning within the FAT file
         }
 
-        // read the cluster at the specified offset
+        // read the cluster_prev at the specified offset
         if (fread(buff + bytes_read, cluster_size, 1, archive) != 1) {
             return GENERAL_ERR; // error reading from the FAT
         }
@@ -357,10 +358,11 @@ error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, si
         // update the number of bytes read
         bytes_read += cluster_size;
 
-        // find next cluster to read
-        get_cluster_chain_value(block, cluster, &value, archive);
+        // find next cluster_prev to read
+        cluster_prev = cluster_current;
+        get_cluster_chain_value(block, cluster_prev, &cluster_current, archive);
 
-        if (value == 0xFFFFFF8) { // end of file has been reached
+        if (cluster_current == 0xFFFFFF8) { // end of file has been reached
             done = true;
         }
     }
@@ -369,35 +371,6 @@ error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, si
 }
 
 // ༽つ۞﹏۞༼つ
-
-static inline int strcmpi(const char *str1, const char *str2) {
-    size_t num = 99999;
-    int ret_code = INT_MIN;
-
-    size_t chars_compared = 0;
-
-    // Check for NULL pointers
-    if (!str1 || !str2) {
-        goto done;
-    }
-
-    // Continue doing case-insensitive comparisons, one-character-at-a-time, of str1 to str2,
-    // as long as at least one of the strings still has more characters in it, and we have
-    // not yet compared num chars.
-    while ((*str1 || *str2) && (chars_compared < num)) {
-        ret_code = tolower((int) (*str1)) - tolower((int) (*str2));
-        if (ret_code != 0) {
-            // The 2 chars just compared don't match
-            break;
-        }
-        chars_compared++;
-        str1++;
-        str2++;
-    }
-
-    done:
-    return ret_code;
-}
 
 int main() {
     FAT_entry entry;
@@ -474,28 +447,31 @@ int main() {
     // ====================================================================================================
     // =================================== TESTS UNITAIRES ===============================================
     // ====================================================================================================
+
+    bpb = NULL;
+    read_boot_block(archive, &bpb);
+
     e = NULL;
     char *hello = "Bonne chance pour le TP4!\n";
     char *content_read = (char *) malloc(sizeof(char) * 1001);
     memset(content_read, '\0', 1001);
     printf("Read 1a: %d\n", find_file_descriptor(archive, bpb, "hello.txt", &e) >= 0);
     read_file(archive, bpb, e, content_read, 1000);
-    printf("Read 1b: %d\n", 0 == strcmpi(hello, content_read));
-    printf("%s\n", content_read);
+    printf("Read 1b: %d\n", 0 == strcasecmp(hello, content_read));
 
     e = NULL;
     char *zola = "The Project Gutenberg eBook, Zola, by Émile Faguet\n\n\nThis eBook is for the use of anyone anywhere at no cost and with\nalmost no restrictions whatsoever.  You may copy it, give it away or\nre-use it under the terms of the Project Gutenberg License included\nwith this eBook or online at www.gutenberg.org\n\n\n\n\n\nTitle: Zola\n\n\nAuthor: Émile Faguet\n\n\n\nRelease Date: June 5, 2008  [eBook #25704]\n\nLanguage: French\n\n\n***START OF THE PROJECT GUTENBERG EBOOK ZOLA***\n\n\nE-text prepared by Gerard Arthus, Rénald Lévesque, and the Project\nGutenberg Online Distributed Proofreading Team (http://www.pgdp.net)\n\n\n\nZOLA\n\nPar\n\nEMILE FAGUET\nde l'Académie Française\nProfesseur à la Sorbonne\n\n\n\n\n\n\nPrix: 10¢\n\n\n\n\nÉmile Zola\n\n\nJe ne m'occuperai ici, strictement, que de l'oeuvre littéraire de\nl'écrivain célèbre qui vient de mourir.\n\nÉmile Zola a eu une carrière littéraire de quarante années environ, ses\ndébuts remontant à 1863 et sa fin tragique et prématurée étant\nsurvenue,--alors qu'il écrivait ";
     memset(content_read, '\0', 1001);
     printf("Read 2a: %d\n", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
     read_file(archive, bpb, e, content_read, 1000);
-    printf("Read 2b: %d\n", 0 == strcmpi(zola, content_read));
+    printf("Read 2b: %d\n", 0 == strcasecmp(zola, content_read));
 
     e = NULL;
     char *los = "The Project Gutenberg EBook of Los exploradores españoles del siglo XVI, by \nCharles F. Lummis\n\nThis eBook is for the use of anyone anywhere at no cost and with\nalmost no restrictions whatsoever.  You may copy it, give it away or\nre-use it under the terms of the Project Gutenberg License included\nwith this eBook or online at www.gutenberg.org/license\n\n\nTitle: Los exploradores españoles del siglo XVI\n\nAuthor: Charles F. Lummis\n\nTranslator: Arturo Cuyás\n\nRelease Date: April 2, 2020 [EBook #61739]\n\nLanguage: Spanish\n\n\n*** START OF THIS PROJECT GUTENBERG EBOOK LOS EXPLORADORES ESPAÑOLES ***\n\n\n\n\nProduced by Adrian Mastronardi and the Online Distributed\nProofreading Team at https://www.pgdp.net (This file was\nproduced from images generously made available by The\nInternet Archive/American Libraries.)\n\n\n\n\n\n\n[Illustration: CHARLES F. LUMMIS]\n\n  Los\n  Exploradores españoles\n  del Siglo XVI\n\n  VINDICACIÓN DE LA ACCIÓN COLONIZADORA\n  ESPAÑOLA EN AMÉRICA\n\n  OBRA ESCRITA EN INGLÉS POR\n\n  C";
     memset(content_read, '\0', 1001);
     printf("Read 3a: %d\n", find_file_descriptor(archive, bpb, "spanish/los.txt", &e) >= 0);
     read_file(archive, bpb, e, content_read, 1000);
-    printf("Read 3b: %d\n", 0 == strcmpi(los, content_read));
+    printf("Read 3b: %d\n", 0 == strcasecmp(los, content_read));
 
     free(e);
 }
