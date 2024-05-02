@@ -259,7 +259,7 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
     uint32_t root_cluster = as_uint32(block->BPB_RootClus);
     long root_lba = cluster_to_lba(block, root_cluster, get_first_data_sector(block));
 
-    *entry = (FAT_entry *) malloc(sizeof(FAT_entry));
+    *entry = malloc(sizeof(FAT_entry));;
     if (*entry == NULL) {
         return GENERAL_ERR; // memory allocation error
     }
@@ -279,7 +279,7 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
         }
 
         // read the entry at the specified offset
-        if (fread(entry, sizeof(FAT_entry), 1, archive) != 1) {
+        if (fread(*entry, sizeof(FAT_entry), 1, archive) != 1) {
             return GENERAL_ERR; // error reading from the FAT
         }
 
@@ -415,19 +415,19 @@ int main() {
     read_boot_block(archive, &bpb);
 
     FAT_entry *e = NULL;
-    printf("File Descriptor 1: %d", find_file_descriptor(archive, bpb, "notexist", &e) < 0);
+    printf("File Descriptor 1: %d\n", find_file_descriptor(archive, bpb, "notexist", &e) < 0);
 
     e = NULL;
-    printf("File Descriptor 2: %d", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
+    printf("File Descriptor 2: %d\n", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
 
     e = NULL;
-    printf("File Descriptor 3: %d", find_file_descriptor(archive, bpb,  "afolder/another/candide.txt", &e) >= 0);
+    printf("File Descriptor 3: %d\n", find_file_descriptor(archive, bpb,  "afolder/another/candide.txt", &e) >= 0);
 
     e = NULL;
-    printf("File Descriptor 4: %d", find_file_descriptor(archive, bpb, "afolder/los.txt", &e) < 0, 1);
+    printf("File Descriptor 4: %d\n", find_file_descriptor(archive, bpb, "afolder/los.txt", &e) < 0);
 
     e = NULL;
-    printf("File Descriptor 5: %d", find_file_descriptor(archive, bpb, "afolder/spansih/titan.txt", &e) < 0 );
+    printf("File Descriptor 5: %d\n", find_file_descriptor(archive, bpb, "afolder/spansih/titan.txt", &e) < 0 );
 
     free(e);
 
