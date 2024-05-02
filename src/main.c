@@ -328,9 +328,35 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
  * @param max_len la longueur du buffer
  * @return un src d'erreur qui va contenir la longueur des donnés lues
  */
-error_code
-read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_len) {
-    return 0;
+error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_len) {
+
+    uint32_t *value;
+    bool not_end_of_file = true;
+    error_code bytes_read = 0;
+    uint32_t cluster = (as_uint32((*entry).DIR_FstClusHI) << 16) + as_uint32((*entry).DIR_FstClusLO); // first cluster to be read
+    *value = cluster;
+
+    while (not_end_of_file) {
+        if (bytes_read > max_len) {
+            return -3; // buffer overflow
+        }
+
+        uint32_t lba = cluster_to_lba(block, *value, get_first_data_sector(block));
+
+        // read cluster into buffer
+        fseek(archive, lba, SEEK_SET);
+        fread(buff, block->BPB_SecPerClus * block->BPB_BytsPerSec, 1, archive);
+        bytes_read += block->BPB_SecPerClus * block->BPB_BytsPerSec;
+
+        // find next cluster to read
+        get_cluster_chain_value(block, cluster, value, archive);
+
+        if (*value == 0xFFFFFF8) { // end of file has been reached
+            not_end_of_file = false;
+        }
+    }
+
+    return bytes_read;
 }
 
 // ༽つ۞﹏۞༼つ
