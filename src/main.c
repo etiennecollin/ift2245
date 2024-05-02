@@ -203,6 +203,14 @@ error_code break_up_path(char *path, uint8_t level, char **output) {
     memcpy(*output, start_ptr, length);
     (*output)[length] = '\0'; // add null terminator
 
+    // convert the output string to uppercase
+    // https://www.tutorialspoint.com/convert-a-string-to-uppercase-in-c
+    for (int i = 0; (*output)[i] != '\0'; i++) {
+        if ((*output)[i] >= 'a' && (*output)[i] <= 'z') {
+            (*output)[i] = (*output)[i] - 32;
+        }
+    }
+
     return NO_ERR; // include the null character
 }
 
@@ -328,13 +336,6 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
 // ༽つ۞﹏۞༼つ
 
 int main() {
-    char *path = "/";
-    uint8_t level = 0;
-    char *output = NULL;
-    break_up_path(path, level, &output);
-    printf("%s\n", output);
-    // vous pouvez ajouter des tests pour les fonctions ici
-
     FAT_entry entry;
     entry.DIR_Name[0] = 65;
     entry.DIR_Name[1] = 78;
@@ -348,9 +349,9 @@ int main() {
     entry.DIR_Name[9] = 32;
     entry.DIR_Name[10] = 32;
 
-    printf("%d\n", file_has_name(&entry, "ANAME"));
-    printf("%d\n", !file_has_name(&entry, "NAME"));
-    printf("%d\n", !file_has_name(&entry, "ANAM"));
+    printf("Name 1a: %d\n", file_has_name(&entry, "ANAME"));
+    printf("Name 1b: %d\n", !file_has_name(&entry, "NAME"));
+    printf("Name 1c: %d\n", !file_has_name(&entry, "ANAM"));
 
     entry.DIR_Name[0] = 65;
     entry.DIR_Name[1] = 78;
@@ -364,8 +365,29 @@ int main() {
     entry.DIR_Name[9] = 65;
     entry.DIR_Name[10] = 65;
 
-    printf("%d\n", !file_has_name(&entry, "ANAME"));
-    printf("%d\n", file_has_name(&entry, "ANAME.AAA"));
+    printf("Name 2a: %d\n", !file_has_name(&entry, "ANAME"));
+    printf("Name 2b: %d\n", file_has_name(&entry, "ANAME.AAA"));
+
+
+    char *path = "first/second/third/fourth";
+    char *read = NULL;
+    break_up_path(path, 0, &read);
+    printf("Path 1: %d, %s\n", strcasecmp(read, "FIRST"), read);
+
+    read = NULL;
+    break_up_path(path, 1, &read);
+    printf("Path 3: %d, %s\n", strcasecmp(read, "SECOND"), read);
+
+    read = NULL;
+    break_up_path(path, 2, &read);
+    printf("Path 4: %d, %s\n", strcasecmp(read, "THIRD"), read);
+
+    read = NULL;
+    break_up_path(path, 3, &read);
+    printf("Path 5: %d, %s\n", strcasecmp(read, "FOURTH"), read);
+
+    free(read);
+
 }
 
 // ༽つ۞﹏۞༼つ
