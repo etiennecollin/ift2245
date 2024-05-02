@@ -48,7 +48,7 @@ static int tlb__lookup(unsigned int page_number, bool write) {
     return -1; // page is not in TLB
 }
 
-void increment_counters() {
+static void increment_counters() {
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
         if (tlb_entries[i].frame_number >= 0) {
             tlb_entries[i].counter++;
