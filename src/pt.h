@@ -9,6 +9,7 @@ struct page {
     bool readonly: 1;
     bool valid: 1;
     unsigned int frame_number: 16;
+    unsigned int counter;
 };
 static struct page page_table[NUM_PAGES];
 
