@@ -114,7 +114,8 @@ bool file_has_name(FAT_entry *entry, char *name) {
         char clean_name[12];
 
         strncpy(extension, dot + 1, 3);
-        snprintf(clean_name, sizeof(clean_name), "%s%s", name, extension);
+        strncpy(filename, name, dot - name);
+        snprintf(clean_name, sizeof(clean_name), "%s%s", filename, extension);
 
         return strcasecmp(clean_entry_name, clean_name) == 0;
     }
@@ -350,6 +351,21 @@ int main() {
     printf("%d\n", file_has_name(&entry, "ANAME"));
     printf("%d\n", !file_has_name(&entry, "NAME"));
     printf("%d\n", !file_has_name(&entry, "ANAM"));
+
+    entry.DIR_Name[0] = 65;
+    entry.DIR_Name[1] = 78;
+    entry.DIR_Name[2] = 65;
+    entry.DIR_Name[3] = 77;
+    entry.DIR_Name[4] = 69;
+    entry.DIR_Name[5] = 32;
+    entry.DIR_Name[6] = 32;
+    entry.DIR_Name[7] = 32;
+    entry.DIR_Name[8] = 65;
+    entry.DIR_Name[9] = 65;
+    entry.DIR_Name[10] = 65;
+
+    printf("%d\n", !file_has_name(&entry, "ANAME"));
+    printf("%d\n", file_has_name(&entry, "ANAME.AAA"));
 }
 
 // ༽つ۞﹏۞༼つ
