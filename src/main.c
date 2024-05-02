@@ -264,11 +264,6 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
         return GENERAL_ERR; // memory allocation error
     }
 
-    // position cursor in the root directory
-    if (fseek(archive, root_lba, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
-        return GENERAL_ERR; // error positioning within the FAT file
-    }
-
     // Initialize some variables
     int i = 0;
     int depth = 0;
@@ -333,7 +328,8 @@ error_code read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, si
     uint32_t *value;
     bool not_end_of_file = true;
     error_code bytes_read = 0;
-    uint32_t cluster = (as_uint32((*entry).DIR_FstClusHI) << 16) + as_uint32((*entry).DIR_FstClusLO); // first cluster to be read
+    uint32_t cluster =
+            (as_uint32((*entry).DIR_FstClusHI) << 16) + as_uint32((*entry).DIR_FstClusLO); // first cluster to be read
     *value = cluster;
 
     while (not_end_of_file) {
@@ -413,6 +409,27 @@ int main() {
     printf("Path 5: %d, %s\n", strcasecmp(read, "FOURTH"), read);
 
     free(read);
+
+    FILE *archive = fopen("../floppy.img", "rb");
+    BPB *bpb = NULL;
+    read_boot_block(archive, &bpb);
+
+    FAT_entry *e = NULL;
+    printf("File Descriptor 1: %d", find_file_descriptor(archive, bpb, "notexist", &e) < 0);
+
+    e = NULL;
+    printf("File Descriptor 2: %d", find_file_descriptor(archive, bpb, "zola.txt", &e) >= 0);
+
+    e = NULL;
+    printf("File Descriptor 3: %d", find_file_descriptor(archive, bpb,  "afolder/another/candide.txt", &e) >= 0);
+
+    e = NULL;
+    printf("File Descriptor 4: %d", find_file_descriptor(archive, bpb, "afolder/los.txt", &e) < 0, 1);
+
+    e = NULL;
+    printf("File Descriptor 5: %d", find_file_descriptor(archive, bpb, "afolder/spansih/titan.txt", &e) < 0 );
+
+    free(e);
 
 }
 
