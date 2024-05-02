@@ -4,7 +4,6 @@
 #pragma ide diagnostic ignored "readability-non-const-parameter"
 
 #include "main.h"
-#include <limits.h>
 
 uint8_t ilog2(uint32_t n) {
     uint8_t i = 0;
