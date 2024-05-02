@@ -19,7 +19,7 @@ uint8_t ilog2(uint32_t n) {
 /**
  * Exercice 1
  *
- * Prend cluster et retourne son addresse en secteur dans l'archive
+ * Prend cluster et retourne son adresse en secteur dans l'archive
  * @param block le block de paramètre du BIOS
  * @param cluster le cluster à convertir en LBA
  * @param first_data_sector le premier secteur de données, donnée par la formule dans le document
@@ -28,6 +28,16 @@ uint8_t ilog2(uint32_t n) {
 uint32_t cluster_to_lba(BPB *block, uint32_t cluster, uint32_t first_data_sector) {
     uint32_t LBA = first_data_sector + (cluster - 2) * block->BPB_SecPerClus;
     return LBA;
+}
+
+uint32_t get_first_data_sector(BPB *block) {
+    //TODO use as_uint... functions
+    uint32_t root_dir_sectors = ((*(uint16_t *) block->BPB_RootEntCnt * 32) +
+                                 (*(uint16_t *) block->BPB_BytsPerSec - 1)) / *(uint16_t *) block->BPB_BytsPerSec;
+    uint32_t fat_table_sectors = block->BPB_NumFATs * *(uint32_t *) block->BPB_FATSz32;
+    uint32_t first_data_sector = *(uint16_t *) block->BPB_RsvdSecCnt + fat_table_sectors + root_dir_sectors;
+
+    return first_data_sector;
 }
 
 /**
@@ -41,10 +51,11 @@ uint32_t cluster_to_lba(BPB *block, uint32_t cluster, uint32_t first_data_sector
  * @return un src d'erreur
  */
 error_code get_cluster_chain_value(BPB *block, uint32_t cluster, uint32_t *value, FILE *archive) {
-    uint32_t fat_offset = cluster * 4; // each entry in the FAT table is 32 bits (4 bytes)
+    uint32_t first_data_sector = get_first_data_sector(block);
+    uint32_t lba = cluster_to_lba(block, cluster, first_data_sector);
 
     // position cursor in the FAT table at the offset
-    if (fseek(archive, fat_offset, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
+    if (fseek(archive, lba, SEEK_SET) != 0) { // fseek returns 0 iff the seek was successful
         return GENERAL_ERR; // error positioning within the FAT file
     }
 
@@ -72,6 +83,17 @@ bool file_has_name(FAT_entry *entry, char *name) {
     strncpy(filename, entry->DIR_Name, 8);
     filename[8] = '\0'; // filename is null terminated
 
+    // Scan the filename for spaces and replace them with null
+    // characters until the first character that is not a space
+    // is found. This is done to remove trailing spaces.
+    for (int i = 7; i >= 0; i--) {
+        if (filename[i] == ' ') {
+            filename[i] = '\0';
+        } else {
+            break;
+        }
+    }
+
     char extension[4]; // holds the extension (8 char) and the null terminator (1 char)
     strncpy(extension, entry->DIR_Name + 8, 3);
     extension[3] = '\0';
@@ -95,53 +117,59 @@ bool file_has_name(FAT_entry *entry, char *name) {
  * -3 si out of memory
  */
 error_code break_up_path(char *path, uint8_t level, char **output) {
-    if (path == NULL || output == NULL || level < 0) {
+    if (path == NULL || level < 0) {
         return -1; // invalid arguments
     }
 
-    int part_count;
-    if (strlen(path) == 0) {
-        part_count = 0; // empty string
-    } else part_count = 1; // string isn't empty => part_count is at least 1
+    int level_counter = 0;
 
     // find the position of the beginning of the part of the path
     char *ptr = path;
+    char *start_ptr = NULL;
+
+    // case where the path starts with '/'. Must not be counted.
     if (*ptr == '/') {
-        ptr++; // case where the path starts with '/'. Must not be counted.
+        ptr++;
     }
-    while (*ptr != '\0' && part_count < level) {
+    while (*ptr == '/') { // skip consecutive '/'
+        ptr++;
+    }
+
+    // iterate through the path to find the part of the path
+    while (*ptr != '\0' && level_counter <= level) {
+        if (level_counter == level && start_ptr == NULL) {
+            start_ptr = ptr;
+        }
         if (*ptr == '/') {
+            level_counter++;
+            if (start_ptr != NULL) {
+                break;
+            }
+
             while (*ptr == '/') { // skip consecutive '/'
                 ptr++;
             }
-            if (*ptr != '\0') {
-                part_count++;
-            }
+        } else {
+            ptr++;
         }
-        ptr++;
     }
 
     // check whether the level is within bounds
-    if (level >= part_count) {
+    if (level > level_counter) {
         return -2; // not enough levels in the path
     }
 
-    // ptr points to the part of the string we are looking
-    // let's determine the size of the string
-    char *start = ptr; // pointer to the start the string
-    int length = 1;
-    while (*ptr != '\0' && *ptr != '/') {
-        length++;
-        ptr++;
-    }
+    // find the end of the part of the path
+    long length = ptr - start_ptr;
 
     // allocate memory
     *output = (char *) malloc(length + 1);
     if (*output == NULL) {
         return -3; // memory allocation error
     }
+
     // copy the substring into the output string
-    memcpy(*output, start, length);
+    memcpy(*output, start_ptr, length);
     (*output)[length] = '\0'; // add null terminator
 
     return NO_ERR; // include the null character
@@ -189,6 +217,11 @@ error_code read_boot_block(FILE *archive, BPB **block) {
  * @return un src d'erreur
  */
 error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry **entry) {
+    uint32_t root_sector = get_first_data_sector(block);
+
+    // iterate through the root directory to find the file descriptor
+
+
     return 0;
 }
 
@@ -209,7 +242,12 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
 // ༽つ۞﹏۞༼つ
 
 int main() {
-// vous pouvez ajouter des tests pour les fonctions ici
+    char *path = "//////dossier////dossier2/fichier.ext";
+    uint8_t level = 1;
+    char *output = NULL;
+    break_up_path(path, level, &output);
+    printf("%s\n", output);
+    // vous pouvez ajouter des tests pour les fonctions ici
 }
 
 // ༽つ۞﹏۞༼つ
