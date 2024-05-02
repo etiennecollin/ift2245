@@ -135,6 +135,8 @@ int get_frame(unsigned int page_number, bool write) {
         }
     }
 
+    pt_update_counters(page_number);
+
     return frame;
 }
 

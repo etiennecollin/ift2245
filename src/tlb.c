@@ -58,14 +58,16 @@ static void increment_counters() {
 
 static unsigned int get_least_recently_used() {
     int lru = 0;
-    bool lru_readonly = tlb_entries[lru].readonly;
     for (int i = 0; i < TLB_NUM_ENTRIES; i++) {
         // if the entry is valid and has a higher counter than the current LRU
         if (tlb_entries[i].frame_number >= 0 && tlb_entries[i].counter >= tlb_entries[lru].counter) {
             // if the entry has the same counter as the current LRU
             if (tlb_entries[lru].counter == tlb_entries[i].counter) {
-                // if the current LRU is dirty and the new entry is not
-                if (!tlb_entries[lru].readonly && tlb_entries[i].readonly) {
+                // prioritize dirty entries as we decided to assume there
+                // is a lesser chance of them being re-written. therefore
+                // clean entries are more likely to be written to in the future
+                // and should be kept in the TLB.
+                if (tlb_entries[lru].readonly && !tlb_entries[i].readonly) {
                     lru = i;
                 } else {
                     continue;

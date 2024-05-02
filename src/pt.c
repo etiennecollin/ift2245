@@ -50,6 +50,7 @@ static void pt__set_entry(unsigned int page_number, unsigned int frame_number) {
     page_table[page_number].valid = true;
     page_table[page_number].readonly = true;
     page_table[page_number].frame_number = frame_number;
+    page_table[page_number].counter = 0;
 }
 
 /* Marque l'entrée de 'page_number' dans la page table comme invalide.  */
@@ -81,28 +82,30 @@ void pt_set_readonly(unsigned int page_number, bool readonly) {
 }
 
 int find_victim_frame_number() {
-    // the victim is the first frame of a page which is not readonly
-    // in the worst case, we will have to loop through all the pages
-    // we start at a random index to avoid always selecting the same page
+    int lru_clean = -1;
+    int lru_dirty = -1;
+
+    // Find the least recently used clean and dirty pages
     for (int i = 0; i < NUM_PAGES; i++) {
-        int index = ((rand() % NUM_PAGES) + i) % NUM_PAGES;
-        if (page_table[index].valid && !page_table[index].readonly) { // TODO : why do we replace a dirty frame. Shouldnt it be the opposite, i.e., we replace a frame that is read only (not dirty)
-            return page_table[index].frame_number;
+        if (page_table[i].valid) {
+            if (page_table[i].readonly) {
+                if (lru_clean == -1 || page_table[i].counter > page_table[lru_clean].counter) {
+                    lru_clean = i;
+                }
+            } else {
+                if (lru_dirty == -1 || page_table[i].counter > page_table[lru_dirty].counter) {
+                    lru_dirty = i;
+                }
+            }
         }
     }
-    // all pages are readonly
-    return rand() % NUM_FRAMES;
-}
 
-int find_victime_frame_number2() { // LRU implementation. Gives priority to not dirty frames
-    int max = 0; // frame number to be replaced
-    for (int i = 0; i < NUM_PAGES; i++) {
-        // first compare the LRU criteria with frames that are not dirty
-        if (page_table[i].valid && page_table[i].readonly && page_table[i].counter > page_table[max].counter) {
-            max = i; // new
-        }
-
-        // if all frames are dirty, TODO
+    // Return the least recently used page
+    // Prioritize clean pages over dirty pages
+    if (lru_clean != -1) {
+        return page_table[lru_clean].frame_number;
+    } else {
+        return page_table[lru_dirty].frame_number;
     }
 }
 
