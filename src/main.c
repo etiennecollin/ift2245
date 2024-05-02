@@ -78,51 +78,50 @@ error_code get_cluster_chain_value(BPB *block, uint32_t cluster, uint32_t *value
  * @return 0 ou 1 (faux ou vrai)
  */
 bool file_has_name(FAT_entry *entry, char *name) {
-    // check if the entry is a directory
-    if ((entry->DIR_Attr & 0x10) != 0) {
-        char dirname[12]; // holds the dirname (11 char) and the null terminator (1 char)
-        strncpy(dirname, entry->DIR_Name, 11);
-        dirname[12] = '\0'; // dirname is null terminated
+    char filename[9]; // holds the filename (8 char) and the null terminator (1 char)
+    strncpy(filename, entry->DIR_Name, 8);
+    filename[8] = '\0'; // filename is null terminated
 
-        // Scan the dirname for spaces and replace them with null
-        // characters until the first character that is not a space
-        // is found. This is done to remove trailing spaces.
-        for (int i = 11; i >= 0; i--) {
-            if (dirname[i] == ' ') {
-                dirname[i] = '\0';
-            } else {
-                break;
-            }
+    // remove trailing spaces
+    for (int i = 7; i >= 0; i--) {
+        if (filename[i] == ' ') {
+            filename[i] = '\0';
+        } else {
+            break;
         }
-
-        return strcasecmp(dirname, name) == 0;
-
-    } else {
-        char filename[9]; // holds the filename (8 char) and the null terminator (1 char)
-        strncpy(filename, entry->DIR_Name, 8);
-        filename[8] = '\0'; // filename is null terminated
-
-        // Scan the filename for spaces and replace them with null
-        // characters until the first character that is not a space
-        // is found. This is done to remove trailing spaces.
-        for (int i = 7; i >= 0; i--) {
-            if (filename[i] == ' ') {
-                filename[i] = '\0';
-            } else {
-                break;
-            }
-        }
-
-        char extension[4]; // holds the extension (8 char) and the null terminator (1 char)
-        strncpy(extension, entry->DIR_Name + 8, 3);
-        extension[3] = '\0';
-
-        char full_name[13]; // filename => 8 char; "." => 1 char; extension => 3 char; null terminator => 1 char; 8 + 1 + 3 + 1 = 13
-        snprintf(full_name, sizeof(full_name), "%s.%s", filename, extension);
-
-        // strcasecmp returns 0 iff both strings are the same. strcasecmp is not case-sensitive
-        return strcasecmp(full_name, name) == 0;
     }
+
+    char extension[4]; // holds the extension (8 char) and the null terminator (1 char)
+    strncpy(extension, entry->DIR_Name + 8, 3);
+    extension[3] = '\0';
+
+    // remove trailing spaces (because there might not be an extension)
+    for (int i = 2; i >= 0; i--) {
+        if (extension[i] == ' ') {
+            extension[i] = '\0';
+        } else {
+            break;
+        }
+    }
+
+    char clean_entry_name[12]; // filename => 8 char; extension => 3 char; null terminator => 1 char; 8 + 3 + 1 = 12
+    snprintf(clean_entry_name, sizeof(clean_entry_name), "%s%s", filename, extension);
+
+    // remove '.' in name if it exists
+    char *dot = strchr(name, '.');
+    if (dot != NULL) {
+        // merge the filename and the extension into a single string
+        char clean_name[12];
+
+        strncpy(extension, dot + 1, 3);
+        strncpy(filename, name, dot - name);
+        snprintf(clean_name, sizeof(clean_name), "%s%s", filename, extension);
+
+        return strcasecmp(clean_entry_name, clean_name) == 0;
+    }
+
+    // strcasecmp returns 0 iff both strings are the same. strcasecmp is not case-sensitive
+    return strcasecmp(clean_entry_name, name) == 0;
 }
 
 /**
@@ -361,6 +360,38 @@ int main() {
     break_up_path(path, level, &output);
     printf("%s\n", output);
     // vous pouvez ajouter des tests pour les fonctions ici
+
+    FAT_entry entry;
+    entry.DIR_Name[0] = 65;
+    entry.DIR_Name[1] = 78;
+    entry.DIR_Name[2] = 65;
+    entry.DIR_Name[3] = 77;
+    entry.DIR_Name[4] = 69;
+    entry.DIR_Name[5] = 32;
+    entry.DIR_Name[6] = 32;
+    entry.DIR_Name[7] = 32;
+    entry.DIR_Name[8] = 32;
+    entry.DIR_Name[9] = 32;
+    entry.DIR_Name[10] = 32;
+
+    printf("%d\n", file_has_name(&entry, "ANAME"));
+    printf("%d\n", !file_has_name(&entry, "NAME"));
+    printf("%d\n", !file_has_name(&entry, "ANAM"));
+
+    entry.DIR_Name[0] = 65;
+    entry.DIR_Name[1] = 78;
+    entry.DIR_Name[2] = 65;
+    entry.DIR_Name[3] = 77;
+    entry.DIR_Name[4] = 69;
+    entry.DIR_Name[5] = 32;
+    entry.DIR_Name[6] = 32;
+    entry.DIR_Name[7] = 32;
+    entry.DIR_Name[8] = 65;
+    entry.DIR_Name[9] = 65;
+    entry.DIR_Name[10] = 65;
+
+    printf("%d\n", !file_has_name(&entry, "ANAME"));
+    printf("%d\n", file_has_name(&entry, "ANAME.AAA"));
 }
 
 // ༽つ۞﹏۞༼つ
