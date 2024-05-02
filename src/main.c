@@ -125,29 +125,41 @@ error_code break_up_path(char *path, uint8_t level, char **output) {
 
     // find the position of the beginning of the part of the path
     char *ptr = path;
-    char *start_ptr = NULL;
+
+    if (*ptr == '.' && *(ptr + 1) == '.' && *(ptr + 2) == '/') {
+        return -1; // invalid arguments
+    }
 
     // case where the path starts with '/'. Must not be counted.
-    if (*ptr == '/') {
+    if (*ptr == '/' || *ptr == '.') {
         ptr++;
     }
     while (*ptr == '/') { // skip consecutive '/'
         ptr++;
     }
 
+    // initialize the start pointer to the beginning of the path
+    char *start_ptr = ptr;
+
     // iterate through the path to find the part of the path
     while (*ptr != '\0' && level_counter <= level) {
-        if (level_counter == level && start_ptr == NULL) {
-            start_ptr = ptr;
-        }
         if (*ptr == '/') {
             level_counter++;
-            if (start_ptr != NULL) {
+            if (level_counter == level + 1) {
                 break;
             }
 
             while (*ptr == '/') { // skip consecutive '/'
                 ptr++;
+            }
+            start_ptr = ptr;
+        } else if (*(ptr - 1) == '/' && *ptr == '.') {
+            if (*(ptr + 1) == '/') {
+                ptr += 2;
+                start_ptr = ptr;
+            } else if (*(ptr + 1) == '.' && *(ptr + 2) == '/') {
+                level_counter--;
+                ptr += 3;
             }
         } else {
             ptr++;
@@ -242,7 +254,7 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
 // ༽つ۞﹏۞༼つ
 
 int main() {
-    char *path = "//////dossier////dossier2/fichier.ext";
+    char *path = "./////a/../b/c";
     uint8_t level = 1;
     char *output = NULL;
     break_up_path(path, level, &output);
