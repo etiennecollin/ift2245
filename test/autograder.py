@@ -28,7 +28,7 @@ except subprocess.TimeoutExpired:
 scheduler_result = None
 try:
     scheduler_result = subprocess.run(['../src/scheduler', 'test_quick.csv'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                      timeout=120)
+                                      timeout=60)
 except subprocess.TimeoutExpired:
     scheduler_result = None
     
@@ -36,7 +36,7 @@ except subprocess.TimeoutExpired:
 big_scheduler_result = None
 try:
     big_scheduler_result = subprocess.run(['../src/scheduler', 'test_grader.csv'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                        timeout=500)
+                                        timeout=300)
 except subprocess.TimeoutExpired:
     big_scheduler_result = None
 
@@ -59,9 +59,9 @@ if scheduler_result is not None and scheduler_result.returncode == 0:
     print(f"Scheduler: passed")
     subgrade += 20
 elif scheduler_result is not None and scheduler_result.returncode != 0:
-    print(f"Scheduler: {scheduler_result.stdout}")
+    print(f"Scheduler FAILED: {scheduler_result.stdout}")
 else:
-    print(f"Scheduler: timeout")
+    print(f"Scheduler FAILED: timeout")
 
 print(f"Subgrade: {subgrade}")
 
@@ -71,8 +71,8 @@ if big_scheduler_result is not None and big_scheduler_result.returncode == 0:
         score = float(score.group(1))
     else:
         print(f"Big Scheduler: {big_scheduler_result.stdout} | Score: 999")
-    print(f"Big Scheduler: passed | Score: {score}")
+    print(f"Big Scheduler: SUCCESS | Score: {score}")
 elif big_scheduler_result is not None and big_scheduler_result.returncode != 0:
-    print(f"Big Scheduler: {big_scheduler_result.stdout} | Score: 999")
+    print(f"Big Scheduler FAILED: {big_scheduler_result.stdout} | Score: 999")
 else:
-    print(f"Big Scheduler: timeout | Score: 999")
+    print(f"Big Scheduler FAILED: timeout | Score: 999")
