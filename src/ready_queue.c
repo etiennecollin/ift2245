@@ -50,6 +50,14 @@ void remove_from_quantum_average(ready_queue_t *queue, process_t *process) {
     pthread_mutex_lock(&queue->quantum_mutex);
     uint64_t quantum = queue->quantum;
     int counter = queue->quantum_counter;
+
+    if (counter == 1) {
+        queue->quantum = INITIAL_QUANTUM;
+        queue->quantum_counter = 0;
+        pthread_mutex_unlock(&queue->quantum_mutex);
+        return;
+    }
+
     queue->quantum = (quantum * counter - process->burst_length) / (counter - 1);
     queue->quantum_counter--;
     pthread_mutex_unlock(&queue->quantum_mutex);
