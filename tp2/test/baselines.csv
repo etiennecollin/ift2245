@@ -1,0 +1,13 @@
+Type,Score
+FIFO,10.41
+SJF,4.53
+SRTF (quantum = 200),4.32
+RR (quantum = 100),5.93
+RR (quantum = 200),5.74
+RR (quantum = 300),6.07
+HRRN (quantum = 100),4.83
+HRRN (quantum = 200),4.37
+HRRN (quantum = 300),4.71
+HRRN-RT (quantum = 200),4.84
+CFS (sched_latency = 600; min_granularity = 200),4.05
+CFS-SRTF (200),3.6
