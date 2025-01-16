@@ -1,0 +1,10 @@
+.DS_Store
+.vscode
+indent.log
+src/analysis
+
+cmake-build-*
+libelf
+tests_build
+.idea
+valgrind_output.txt
